@@ -1,0 +1,15 @@
+{
+  "name": "rentrent-scraper",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Python 爬蟲",
+  "main": "index.js",
+  "scripts": {
+    "start": "python main.py"
+  },
+  "dependencies": {},
+  "devDependencies": {},
+  "engines": {
+    "node": "20.10.0"
+  }
+} 

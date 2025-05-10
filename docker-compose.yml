@@ -1,0 +1,89 @@
+version: "3.8"
+
+services:
+  # PostgreSQL 資料庫 (包含 PostGIS 擴充)
+  db:
+    image: postgres:14
+    container_name: rentrent-db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: rentrent
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docker/db/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # FastAPI 後端服務
+  backend:
+    build:
+      context: .
+      dockerfile: ./docker/backend/Dockerfile
+    container_name: rentrent-backend
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@db:5432/rentrent?schema=public
+      - REDIS_URL=redis://redis:6379
+      - PORT=8000
+      - API_PREFIX=/api
+      - LOG_LEVEL=debug
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./apps/backend:/app
+      - /app/node_modules
+
+  # Python 爬蟲服務
+  scraper:
+    build:
+      context: .
+      dockerfile: ./docker/scraper/Dockerfile
+    container_name: rentrent-scraper
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@db:5432/rentrent?schema=public
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./apps/scraper:/app
+      - /app/packages
+
+  # Next.js 前端開發服務 (僅開發環境使用)
+  frontend:
+    build:
+      context: .
+      dockerfile: ./docker/frontend/Dockerfile
+    container_name: rentrent-frontend
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./apps/frontend:/app
+      - /app/node_modules
+    depends_on:
+      - backend
+    environment:
+      - NODE_ENV=development
+      - NEXT_PUBLIC_API_URL=http://localhost:8000/api
+
+  # Redis 緩存
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+
+volumes:
+  postgres_data:
+  redis_data: 

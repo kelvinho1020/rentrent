@@ -1,0 +1,111 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Listing {
+  id            Int      @id @default(autoincrement())
+  sourceId      String   @map("source_id")
+  title         String
+  price         Int
+  sizePing      Float    @map("size_ping")
+  houseType     String?  @map("house_type")
+  roomType      String?  @map("room_type")
+  address       String
+  district      String
+  city          String
+  description   String?
+  imageUrls     String[] @map("image_urls")
+  facilities    String[] @default([])
+  contactName   String?  @map("contact_name")
+  contactPhone  String?  @map("contact_phone")
+  floor         Int?
+  totalFloor    Int?     @map("total_floor")
+  lastUpdated   DateTime @map("last_updated")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+  longitude     Float
+  latitude      Float
+  isActive      Boolean  @default(true) @map("is_active")
+  source        String   @default("591")
+  
+  // 關聯
+  commuteTimes  CommuteTime[]
+
+  @@unique([sourceId, source])
+  @@index([city, district])
+  @@index([price])
+  @@index([isActive])
+  @@map("listings")
+}
+
+model CommuteTime {
+  id              Int      @id @default(autoincrement())
+  originId        Int      @map("origin_id")
+  destination     String
+  commuteTime     Int      @map("commute_time")
+  commuteDistance Int?     @map("commute_distance")
+  transitMode     String   @map("transit_mode")
+  calculatedAt    DateTime @default(now()) @map("calculated_at")
+
+  // 關聯
+  origin          Listing  @relation(fields: [originId], references: [id])
+
+  @@unique([originId, destination, transitMode], name: "unique_commute_route")
+  @@index([commuteTime])
+  @@map("commute_times")
+}
+
+model User {
+  id              Int       @id @default(autoincrement())
+  email           String    @unique
+  passwordHash    String    @map("password_hash")
+  name            String?
+  avatarUrl       String?   @map("avatar_url")
+  role            String    @default("user")
+  isActive        Boolean   @default(true) @map("is_active")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+  lastLoginAt     DateTime? @map("last_login_at")
+  
+  // 關聯
+  savedSearches   SavedSearch[]
+  favoriteListings FavoriteListing[]
+
+  @@map("users")
+}
+
+model SavedSearch {
+  id            Int      @id @default(autoincrement())
+  userId        Int      @map("user_id")
+  name          String
+  searchParams  Json     @map("search_params")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+  
+  // 關聯
+  user          User     @relation(fields: [userId], references: [id])
+
+  @@map("saved_searches")
+}
+
+model FavoriteListing {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @map("user_id")
+  listingId Int      @map("listing_id")
+  notes     String?
+  createdAt DateTime @default(now()) @map("created_at")
+  
+  // 添加到 User 的關聯
+  user      User     @relation(fields: [userId], references: [id])
+  
+  @@unique([userId, listingId])
+  @@map("favorite_listings")
+} 
