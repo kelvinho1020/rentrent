@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 import { useMapStore } from "@/store/useMapStore";
@@ -14,7 +15,64 @@ if (!MAPBOX_TOKEN) {
 }
 mapboxgl.accessToken = MAPBOX_TOKEN || "";
 
+// 檢測點是否在等時線範圍內（圓形）
+function isPointInIsochrone(point: [number, number], polygon: any): boolean {
+  try {
+    // 從等時線feature中獲取半徑和中心點資訊
+    const properties = polygon.properties;
+    if (properties && properties.radius && properties.center) {
+      const [centerLng, centerLat] = properties.center;
+      const radius = properties.radius; // 半徑（公里）
+      
+      // 計算點到中心的距離（公里）
+      const distance = calculateDistance(centerLat, centerLng, point[1], point[0]);
+      
+      return distance <= radius;
+    }
+    
+    // 如果沒有半徑資訊，使用複雜的多邊形檢測（備用方案）
+    if (polygon.type === 'Polygon' && polygon.coordinates && polygon.coordinates[0]) {
+      return isPointInSimplePolygon(point, polygon.coordinates[0]);
+    }
+    
+    console.warn('無法檢測等時線範圍，預設顯示所有房屋');
+    return true;
+  } catch (error) {
+    console.error('檢測點在等時線內失敗:', error);
+    return true; // 出錯時預設顯示
+  }
+}
+
+// 計算兩點之間的距離（公里）
+function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 6371; // 地球半徑（公里）
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+    Math.sin(dLon/2) * Math.sin(dLon/2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  return R * c;
+}
+
+// 簡單的點在多邊形內檢測（備用方案）
+function isPointInSimplePolygon(point: [number, number], ring: number[][]): boolean {
+  const [x, y] = point;
+  let inside = false;
+  
+  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+    const [xi, yi] = ring[i];
+    const [xj, yj] = ring[j];
+    
+    if (((yi > y) !== (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi)) {
+      inside = !inside;
+    }
+  }
+  return inside;
+}
+
 export default function Map() {
+  const router = useRouter();
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   const markers = useRef<mapboxgl.Marker[]>([]);
@@ -24,10 +82,12 @@ export default function Map() {
   const {
     workLocation,
     commuteTime,
+    maxDistance,
     availableListings,
     isochromePolygon,
     setIsochromePolygon,
     setIsLoading,
+    setFullPageLoading,
   } = useMapStore();
 
   // 初始化地圖
@@ -79,20 +139,41 @@ export default function Map() {
     };
   }, []);
   
-  // 當工作地點變更時，添加標記並獲取等時線
+  // 當工作地點、通勤時間或最大距離變更時，添加標記並獲取等時線
   useEffect(() => {
     if (!map.current || !workLocation || !mapInitialized) return;
     
-    console.log("Work location changed:", workLocation);
+    console.log("Work location, commute time, or max distance changed:", { workLocation, commuteTime, maxDistance });
     
     // 清除現有的工作地點標記
     markers.current.forEach((marker) => marker.remove());
     markers.current = [];
     
     // 添加工作地點標記
-    const marker = new mapboxgl.Marker({ color: "#4c70f7" })
+    const marker = new mapboxgl.Marker({ 
+      color: "#4c70f7",
+      scale: 1.2
+    })
       .setLngLat([workLocation.longitude, workLocation.latitude])
       .addTo(map.current);
+    
+    // 添加自定義彈窗
+    const popupNode = document.createElement("div");
+    const popupRoot = createRoot(popupNode);
+    popupRoot.render(
+      <div className="p-2">
+        <h3 className="font-bold text-primary-600">工作地點</h3>
+        <p className="text-sm text-gray-600">
+          經度: {workLocation.longitude.toFixed(4)}<br />
+          緯度: {workLocation.latitude.toFixed(4)}
+        </p>
+      </div>
+    );
+    
+    marker.setPopup(
+      new mapboxgl.Popup({ offset: 25 })
+        .setDOMContent(popupNode)
+    );
     
     markers.current.push(marker);
     
@@ -107,11 +188,13 @@ export default function Map() {
     const fetchIsochrone = async () => {
       try {
         setIsLoading(true);
-        console.log("Fetching isochrone for:", workLocation, commuteTime);
+        setFullPageLoading(true, "正在生成通勤範圍圈...");
+        console.log("Fetching isochrone for:", { workLocation, commuteTime, maxDistance });
         const data = await getIsochrone(
           workLocation.latitude,
           workLocation.longitude,
-          commuteTime
+          commuteTime,
+          maxDistance
         );
         
         console.log("Isochrone data received:", data);
@@ -124,11 +207,12 @@ export default function Map() {
         console.error("獲取等時線失敗:", error);
       } finally {
         setIsLoading(false);
+        setFullPageLoading(false);
       }
     };
     
     fetchIsochrone();
-  }, [workLocation, commuteTime, setIsLoading, setIsochromePolygon, mapInitialized]);
+  }, [workLocation, commuteTime, maxDistance, setIsLoading, setIsochromePolygon, mapInitialized]);
   
   // 當等時線變更時，在地圖上顯示
   useEffect(() => {
@@ -191,7 +275,7 @@ export default function Map() {
   
   // 當可用租屋物件變更時，在地圖上顯示
   useEffect(() => {
-    if (!map.current || !isochroneLoaded || !mapInitialized) return;
+    if (!map.current || !mapInitialized) return;
     
     console.log("Available listings changed:", availableListings.length);
     
@@ -199,14 +283,60 @@ export default function Map() {
     markers.current.slice(1).forEach((marker) => marker.remove());
     markers.current = markers.current.slice(0, 1);
     
+    // 過濾等時線範圍內的房屋
+    const filteredListings = availableListings.filter((listing: ListingBasic) => {
+      // 如果沒有等時線多邊形，顯示所有房屋
+      if (!isochromePolygon) {
+        return true;
+      }
+      
+      // 檢查房屋座標是否在等時線多邊形內
+      const point: [number, number] = [listing.coordinates[0], listing.coordinates[1]]; // [lng, lat]
+      return isPointInIsochrone(point, isochromePolygon);
+    });
+    
+    console.log(`等時線過濾：${filteredListings.length}/${availableListings.length} 筆房屋在範圍內`);
+    
     // 添加租屋物件標記
-    availableListings.forEach((listing: ListingBasic) => {
+    filteredListings.forEach((listing: ListingBasic) => {
       // 創建自定義 Popup 元素
       const popupNode = document.createElement("div");
       const popupRoot = createRoot(popupNode);
       
+      // 根據通勤時間決定標記顏色
+      let markerColor = "#e67e22"; // 默認橙色
+      if (listing.commute_time) {
+        if (listing.commute_time <= 15) {
+          markerColor = "#10b981"; // 綠色 - 通勤時間很短
+        } else if (listing.commute_time <= 30) {
+          markerColor = "#3b82f6"; // 藍色 - 通勤時間適中
+        } else if (listing.commute_time > 45) {
+          markerColor = "#ef4444"; // 紅色 - 通勤時間較長
+        }
+      }
+      
+      // 創建可點擊的marker元素
+      const markerElement = document.createElement("div");
+      markerElement.className = "cursor-pointer hover:scale-110 transition-transform duration-200";
+      markerElement.style.width = "20px";
+      markerElement.style.height = "20px";
+      markerElement.style.backgroundColor = markerColor;
+      markerElement.style.borderRadius = "50%";
+      markerElement.style.border = "2px solid white";
+      markerElement.style.boxShadow = "0 2px 4px rgba(0,0,0,0.3)";
+      
+      // 添加點擊事件 - 導航到房屋詳情頁
+      markerElement.addEventListener("click", (e) => {
+        e.stopPropagation();
+        console.log(`點擊房屋: ${listing.title} (ID: ${listing.id})`);
+        router.push(`/listings/${listing.id}`);
+      });
+      
       // 添加標記
-      const marker = new mapboxgl.Marker({ color: "#e67e22" })
+      const marker = new mapboxgl.Marker({ 
+        element: markerElement,
+        anchor: "center"
+      })
         .setLngLat(listing.coordinates)
         .setPopup(
           new mapboxgl.Popup({ offset: 25 }).setDOMContent(popupNode)
@@ -219,7 +349,27 @@ export default function Map() {
       const { content } = ListingPopup({ listing });
       popupRoot.render(content);
     });
-  }, [availableListings, isochroneLoaded, mapInitialized]);
+    
+    // 如果有列表且沒有工作地點標記，調整地圖視圖以包含所有標記
+    if (availableListings.length > 0 && markers.current.length > 0 && !workLocation) {
+      try {
+        const bounds = new mapboxgl.LngLatBounds();
+        
+        // 將所有標記的位置添加到邊界中
+        markers.current.forEach(marker => {
+          bounds.extend(marker.getLngLat());
+        });
+        
+        // 調整地圖以適應所有標記
+        map.current.fitBounds(bounds, {
+          padding: 50,
+          maxZoom: 15
+        });
+      } catch (error) {
+        console.error("調整地圖視圖失敗:", error);
+      }
+    }
+  }, [availableListings, workLocation, mapInitialized]);
 
   console.log("Rendering Map component");
 

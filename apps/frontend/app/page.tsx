@@ -4,6 +4,8 @@ import dynamic from "next/dynamic";
 import { useState, useEffect } from "react";
 import SearchPanel from "@/components/SearchPanel";
 import ListingsList from "@/components/ListingsList";
+import FullPageLoading from "@/components/FullPageLoading";
+import { useMapStore } from "@/store/useMapStore";
 
 // 動態導入地圖元件，避免 SSR 時報錯
 const Map = dynamic(() => import("@/components/Map"), {
@@ -20,6 +22,7 @@ const Map = dynamic(() => import("@/components/Map"), {
 export default function Home() {
   const [leftPanelTab, setLeftPanelTab] = useState<"search" | "results">("search");
   const [mapLoaded, setMapLoaded] = useState(false);
+  const { isFullPageLoading, fullPageLoadingMessage } = useMapStore();
 
   // 監聽頁面加載完成，設置地圖容器的高度
   useEffect(() => {
@@ -35,6 +38,11 @@ export default function Home() {
 
   return (
     <div className="flex flex-col h-full">
+      {/* 全頁面載入中 */}
+      {isFullPageLoading && (
+        <FullPageLoading message={fullPageLoadingMessage} />
+      )}
+      
       <div className="flex-1 grid grid-cols-12 h-full overflow-hidden">
         {/* 左側面板 */}
         <div className="col-span-12 md:col-span-4 lg:col-span-3 border-r border-gray-200 flex flex-col h-full overflow-hidden">

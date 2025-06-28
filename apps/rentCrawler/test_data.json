@@ -1,0 +1,40 @@
+[
+  {
+    "url": "https://rent.houseprice.tw/house/1254146_1902131",
+    "title": "城中向陽上冠全新唯美兩房",
+    "price": "3228",
+    "size_detail": "使用16.03坪、權狀26.9坪",
+    "size": "16.03",
+    "room_layout": "2房1廳1衛1陽台",
+    "floor_info": "3/15樓",
+    "house_type": "整層住家 (大樓)",
+    "parking": "無車位",
+    "latitude": 25.0,
+    "longitude": 121.5,
+    "district": "中正區",
+    "city": "台北市",
+    "images": [
+      "https://s.houseprice.tw/fp/houseprice-rent/static/images/header_logo_5168.png?v=202503030001",
+      "https://image.houseprice.tw/p1-hpimage/NTAwODM5NGhwaW1hZ2U,/9f8b1c3bff2c4805_1920x1440.jpg/qs/w=596"
+    ]
+  },
+  {
+    "url": "https://rent.houseprice.tw/house/1251946_2053227",
+    "title": "亞昕昕上城三房車近扶輪公園附家俱電",
+    "price": "0",
+    "size_detail": "使用22坪、權狀44坪",
+    "size": "22",
+    "room_layout": "3房2廳2衛1陽台",
+    "floor_info": "5/23樓",
+    "house_type": "整層住家 (大樓)",
+    "parking": "平面式車位(1個)",
+    "latitude": 25.0,
+    "longitude": 121.5,
+    "district": "林口區",
+    "city": "台北市",
+    "images": [
+      "https://s.houseprice.tw/fp/houseprice-rent/static/images/header_logo_5168.png?v=202503030001",
+      "https://image.houseprice.tw/p1-hpimage/NDkzODIxMmhwaW1hZ2U,/6827eb895d69461d_1706x960.jpg/qs/w=596"
+    ]
+  }
+]

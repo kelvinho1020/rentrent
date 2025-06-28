@@ -20,6 +20,7 @@ export interface ListingBasic {
 // 租屋物件詳細資訊
 export interface ListingDetail extends ListingBasic {
   source_id: string;
+  url?: string;
   house_type?: string;
   room_type?: string;
   description?: string;
@@ -37,6 +38,7 @@ export interface ListingDetail extends ListingBasic {
 export interface SearchResponse {
   total: number;
   results: ListingBasic[];
+  note?: string; // 新增：備註說明，例如使用直線距離搜尋的備註
 }
 
 // 通勤搜尋請求
@@ -46,4 +48,8 @@ export interface CommuteSearchRequest {
   min_price?: number;
   max_price?: number;
   min_size?: number;
+  city?: string; // 新增：城市篩選
+  district?: string; // 新增：行政區篩選
+  transit_mode?: string; // 新增：交通方式 (driving、transit、walking)
+  max_distance?: number; // 新增：最大直線距離，單位公里
 } 

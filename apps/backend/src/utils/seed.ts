@@ -3,102 +3,153 @@ import { logger } from './logger';
 
 const prisma = new PrismaClient();
 
+/**
+ * 產生測試數據，初始化資料庫
+ */
 async function main() {
-  logger.info('開始填充資料庫...');
+  logger.info('開始初始化測試數據...');
 
-  try {
-    // 添加一些示例城市的出租房源
-    const cities = ['台北市', '新北市', '桃園市', '台中市', '台南市', '高雄市'];
-    const districts = {
-      '台北市': ['大安區', '信義區', '中山區', '松山區', '文山區'],
-      '新北市': ['板橋區', '中和區', '新莊區', '三重區', '永和區'],
-      '桃園市': ['桃園區', '中壢區', '平鎮區', '八德區', '龜山區'],
-      '台中市': ['西屯區', '北屯區', '南屯區', '太平區', '大里區'],
-      '台南市': ['東區', '南區', '中西區', '北區', '安平區'],
-      '高雄市': ['左營區', '三民區', '鼓山區', '前金區', '苓雅區'],
-    };
+  // 清空現有數據（可選）
+  await prisma.commuteTime.deleteMany({});
+  await prisma.listing.deleteMany({});
+  
+  logger.info('已清除現有數據，開始創建新數據');
 
-    const houseTypes = ['公寓', '電梯大樓', '透天厝', '華廈', '別墅'];
-    const roomTypes = ['套房', '雅房', '1房', '2房', '3房', '4房以上'];
-    const facilities = [
-      '廚房', '陽台', '冷氣', '洗衣機', '冰箱', '熱水器', 
-      '第四台', '網路', '床', '衣櫃', '沙發', '桌椅', 
-      '停車位', '電梯', '游泳池', '健身房'
-    ];
-
-    // 為每個城市創建一些租屋物件
-    for (const city of cities) {
-      for (const district of districts[city]) {
-        // 每個區域創建5個租屋物件
-        for (let i = 0; i < 5; i++) {
-          const price = Math.floor(Math.random() * 20000) + 10000;
-          const sizePing = Math.floor(Math.random() * 30) + 5;
-          const houseType = houseTypes[Math.floor(Math.random() * houseTypes.length)];
-          const roomType = roomTypes[Math.floor(Math.random() * roomTypes.length)];
-          
-          // 從設施列表中隨機選擇3-8個
-          const selectedFacilities = facilities
-            .sort(() => 0.5 - Math.random())
-            .slice(0, Math.floor(Math.random() * 6) + 3);
-          
-          // 創建隨機經緯度（大致位於台灣範圍內）
-          const latitude = 23.5 + Math.random() * 2.5;  // 約 23.5-26 (台灣範圍)
-          const longitude = 120 + Math.random() * 2;    // 約 120-122 (台灣範圍)
-          
-          // 創建示例租屋物件
-          await prisma.listing.create({
-            data: {
-              sourceId: `test-${city}-${district}-${i}`,
-              source: 'seed',
-              title: `${city}${district} ${roomType}出租 - 近捷運站`,
-              price,
-              sizePing,
-              houseType,
-              roomType,
-              address: `${city}${district}測試路${Math.floor(Math.random() * 100) + 1}號`,
-              district,
-              city,
-              description: `位於${city}${district}的舒適${roomType}，交通便利，環境清幽。近捷運站，生活機能佳，隨時可入住。`,
-              imageUrls: [
-                'https://picsum.photos/800/600',
-                'https://picsum.photos/800/601',
-                'https://picsum.photos/800/602',
-              ],
-              facilities: selectedFacilities,
-              contactName: '王先生',
-              contactPhone: '0912345678',
-              floor: Math.floor(Math.random() * 10) + 1,
-              totalFloor: Math.floor(Math.random() * 15) + 10,
-              longitude,
-              latitude,
-              isActive: true,
-              lastUpdated: new Date(),
-              createdAt: new Date(),
-              updatedAt: new Date(),
-            },
-          });
-        }
-      }
+  // 創建台北市測試物件
+  const listings = [
+    // 台北市大安區
+    {
+      sourceId: 'test-001',
+      title: '大安森林公園旁優質套房',
+      price: 18000,
+      sizePing: 8.5,
+      houseType: '獨立套房',
+      roomType: '1房1廳1衛',
+      address: '台北市大安區新生南路二段10號',
+      district: '大安區',
+      city: '台北市',
+      description: '近捷運大安森林公園站，生活機能佳，環境清幽',
+      imageUrls: ['https://example.com/img1.jpg', 'https://example.com/img2.jpg'],
+      facilities: ['陽台', '電梯', '冷氣', '洗衣機'],
+      contactName: '王先生',
+      contactPhone: '0912345678',
+      floor: 5,
+      totalFloor: 12,
+      longitude: 121.5341,
+      latitude: 25.0307,
+      source: '591'
+    },
+    // 台北市信義區
+    {
+      sourceId: 'test-002',
+      title: '信義區精緻兩房',
+      price: 32000,
+      sizePing: 15.8,
+      houseType: '整層住家',
+      roomType: '2房1廳1衛',
+      address: '台北市信義區松智路12號',
+      district: '信義區',
+      city: '台北市',
+      description: '信義區豪宅，近台北101，交通便利',
+      imageUrls: ['https://example.com/img3.jpg', 'https://example.com/img4.jpg'],
+      facilities: ['陽台', '電梯', '冷氣', '洗衣機', '冰箱', '熱水器'],
+      contactName: '李小姐',
+      contactPhone: '0923456789',
+      floor: 8,
+      totalFloor: 15,
+      longitude: 121.5677,
+      latitude: 25.0323,
+      source: '591'
+    },
+    // 台北市中山區
+    {
+      sourceId: 'test-003',
+      title: '中山站旁時尚小套房',
+      price: 15000,
+      sizePing: 6.2,
+      houseType: '獨立套房',
+      roomType: '1房1衛',
+      address: '台北市中山區南京東路二段30號',
+      district: '中山區',
+      city: '台北市',
+      description: '近捷運中山站，商圈生活機能完善',
+      imageUrls: ['https://example.com/img5.jpg'],
+      facilities: ['電梯', '冷氣', '網路'],
+      contactName: '張先生',
+      contactPhone: '0934567890',
+      floor: 3,
+      totalFloor: 7,
+      longitude: 121.5228,
+      latitude: 25.0526,
+      source: '591'
+    },
+    // 台北市內湖區
+    {
+      sourceId: 'test-004',
+      title: '內湖科學園區三房美寓',
+      price: 38000,
+      sizePing: 28.5,
+      houseType: '整層住家',
+      roomType: '3房2廳2衛',
+      address: '台北市內湖區內湖路一段88號',
+      district: '內湖區',
+      city: '台北市',
+      description: '鄰近內湖科學園區，交通便利，環境清幽',
+      imageUrls: ['https://example.com/img6.jpg', 'https://example.com/img7.jpg'],
+      facilities: ['陽台', '電梯', '冷氣', '洗衣機', '冰箱', '熱水器', '車位'],
+      contactName: '黃小姐',
+      contactPhone: '0945678901',
+      floor: 10,
+      totalFloor: 12,
+      longitude: 121.5766,
+      latitude: 25.0794,
+      source: '591'
+    },
+    // 新北市板橋區
+    {
+      sourceId: 'test-005',
+      title: '板橋江子翠捷運站旁兩房',
+      price: 22000,
+      sizePing: 12.8,
+      houseType: '整層住家',
+      roomType: '2房1廳1衛',
+      address: '新北市板橋區文化路二段55號',
+      district: '板橋區',
+      city: '新北市',
+      description: '近捷運江子翠站，生活機能佳',
+      imageUrls: ['https://example.com/img8.jpg'],
+      facilities: ['陽台', '電梯', '冷氣', '洗衣機'],
+      contactName: '陳先生',
+      contactPhone: '0956789012',
+      floor: 4,
+      totalFloor: 8,
+      longitude: 121.4728,
+      latitude: 25.0294,
+      source: '591'
     }
+  ];
 
-    // 添加示例用戶
-    await prisma.user.create({
+  // 批量創建租屋物件
+  for (const listing of listings) {
+    await prisma.listing.create({
       data: {
-        email: 'test@example.com',
-        passwordHash: '$2b$10$EpRnTzVlqHNP0.fUbXUwSOyuiXe/QLSUG6xNekdHgTGmrpHEfIoxm', // 密碼: secret42
-        name: '測試用戶',
-        role: 'user',
-        isActive: true,
-      },
+        ...listing,
+        lastUpdated: new Date(),
+        createdAt: new Date()
+      }
     });
-
-    logger.info('資料庫填充完成！');
-  } catch (error) {
-    logger.error('填充資料庫時發生錯誤:', error);
-    process.exit(1);
-  } finally {
-    await prisma.$disconnect();
   }
+
+  logger.info(`成功創建 ${listings.length} 個測試租屋物件`);
 }
 
-main(); 
+// 執行並處理錯誤
+main()
+  .catch((e) => {
+    logger.error('數據初始化失敗：', e);
+    process.exit(1);
+  })
+  .finally(async () => {
+    // 關閉 Prisma 客戶端連接
+    await prisma.$disconnect();
+  }); 

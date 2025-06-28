@@ -47,7 +47,7 @@ export default function RootLayout({
               </nav>
             </div>
           </header>
-          <div className="flex-1 overflow-hidden">
+          <div className="flex-1 overflow-scroll">
             {children}
           </div>
           <footer className="bg-gray-900 text-white py-6">

@@ -32,11 +32,12 @@ interface IsochroneParams {
   location: [number, number];
   minutes: number;
   mode: string;
+  maxDistance?: number; // 新增最大距離參數（公里）
 }
 
 /**
  * 獲取兩點間的距離矩陣
- * @param origin 起點（經緯度 lat,lng 或地址）
+ * @param origin 起點（經緯度 lat,lng 或地址）可以是單一點或用 | 分隔的多個點
  * @param destination 終點（經緯度 lat,lng 或地址）
  * @param mode 交通方式（driving、transit、walking）
  */
@@ -46,48 +47,27 @@ export async function getDistanceMatrix(
   mode = 'driving'
 ): Promise<DistanceMatrixResponse | null> {
   try {
+    // 檢查是否為批量請求（包含 | 符號）
+    const isBatchRequest = origin.includes('|');
+    
     // 創建緩存鍵
     const cacheKey = `distance_matrix:${origin}:${destination}:${mode}`;
 
     // 檢查緩存
     const cachedData = await redisClient.get(cacheKey);
     if (cachedData) {
+      logger.debug('使用緩存的距離矩陣數據');
       return JSON.parse(cachedData);
     }
 
-    // 開發環境下使用模擬數據
-    if (process.env.NODE_ENV === 'development' && !GOOGLE_MAPS_API_KEY.includes('EXAMPLE')) {
-      try {
-        // 嘗試使用 Google Maps API
-        const response = await axios.get(
-          'https://maps.googleapis.com/maps/api/distancematrix/json',
-          {
-            params: {
-              origins: origin,
-              destinations: destination,
-              mode,
-              key: GOOGLE_MAPS_API_KEY,
-            },
-          }
-        );
-
-        if (response.data.status === 'OK') {
-          // 緩存結果
-          await redisClient.setex(cacheKey, CACHE_EXPIRY, JSON.stringify(response.data));
-          return response.data;
-        }
-        
-        // 如果請求不成功，回退到模擬數據
-        logger.warn('Google Maps API 請求失敗，使用模擬數據', { status: response.data.status });
-      } catch (error) {
-        logger.warn('Google Maps API 請求發生錯誤，使用模擬數據', { error });
-      }
-      
-      // 使用模擬數據
+    // 開發環境或測試環境下使用模擬數據
+    if ((process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test') 
+        && !GOOGLE_MAPS_API_KEY.startsWith('AIza')) {
+      logger.info('開發環境：使用模擬距離矩陣數據');
       return generateMockDistanceMatrix(origin, destination, mode);
     }
 
-    // 生產環境下嘗試使用 Google Maps API
+    // 使用 Google Maps API
     const response = await axios.get(
       'https://maps.googleapis.com/maps/api/distancematrix/json',
       {
@@ -99,7 +79,6 @@ export async function getDistanceMatrix(
         },
       }
     );
-
     if (response.data.status !== 'OK') {
       logger.error('Google Maps API 請求失敗', { status: response.data.status });
       return generateMockDistanceMatrix(origin, destination, mode);
@@ -107,6 +86,10 @@ export async function getDistanceMatrix(
 
     // 緩存結果
     await redisClient.setex(cacheKey, CACHE_EXPIRY, JSON.stringify(response.data));
+    logger.debug('已緩存新的距離矩陣數據', { 
+      origins: isBatchRequest ? `${origin.split('|').length} 個地點` : origin,
+      destinations: destination 
+    });
 
     return response.data;
   } catch (error) {
@@ -120,24 +103,152 @@ export async function getDistanceMatrix(
  * 使用簡單的距離計算方法，僅供開發環境使用
  */
 function generateMockDistanceMatrix(origin: string, destination: string, mode = 'driving'): DistanceMatrixResponse {
-  // 解析起點和終點座標
-  let originCoords: [number, number];
+  // 檢查是否為批量請求
+  const originPoints = origin.split('|');
+  const isBatchRequest = originPoints.length > 1;
+  
+  // 解析終點座標
   let destCoords: [number, number];
   
   try {
-    // 假設 origin 和 destination 是 "lat,lng" 格式
-    const [originLat, originLng] = origin.split(',').map(Number);
+    // 假設 destination 是 "lat,lng" 格式
     const [destLat, destLng] = destination.split(',').map(Number);
     
-    if (isNaN(originLat) || isNaN(originLng) || isNaN(destLat) || isNaN(destLng)) {
-      throw new Error('無效的座標格式');
+    if (isNaN(destLat) || isNaN(destLng)) {
+      throw new Error('無效的終點座標格式');
     }
     
-    originCoords = [originLat, originLng];
     destCoords = [destLat, destLng];
   } catch (error) {
-    // 如果解析失敗，使用預設座標
-    logger.warn('無法解析座標，使用預設模擬數據', { error, origin, destination });
+    // 如果解析失敗，使用預設座標處理
+    logger.warn('無法解析終點座標，使用預設模擬數據', { error, destination });
+    
+    if (isBatchRequest) {
+      // 處理多起點的情況
+      return {
+        status: 'OK',
+        rows: originPoints.map(() => ({
+          elements: [{
+            status: 'OK',
+            duration: {
+              value: 900, // 15分鐘
+              text: '15 mins'
+            },
+            distance: {
+              value: 5000, // 5公里
+              text: '5 km'
+            }
+          }]
+        }))
+      };
+    } else {
+      // 單一起點的情況
+      return {
+        status: 'OK',
+        rows: [{
+          elements: [{
+            status: 'OK',
+            duration: {
+              value: 900, // 15分鐘
+              text: '15 mins'
+            },
+            distance: {
+              value: 5000, // 5公里
+              text: '5 km'
+            }
+          }]
+        }]
+      };
+    }
+  }
+  
+  // 處理批量請求
+  if (isBatchRequest) {
+    const rows = originPoints.map(originPoint => {
+      try {
+        // 解析起點座標
+        const [originLat, originLng] = originPoint.split(',').map(Number);
+        
+        if (isNaN(originLat) || isNaN(originLng)) {
+          throw new Error('無效的起點座標格式');
+        }
+        
+        // 計算距離和時間
+        const distance = calculateDistance([originLat, originLng], destCoords);
+        const durationSeconds = calculateDuration(distance, mode);
+        
+        return {
+          elements: [{
+            status: 'OK',
+            duration: {
+              value: Math.round(durationSeconds),
+              text: `${Math.round(durationSeconds / 60)} mins`
+            },
+            distance: {
+              value: Math.round(distance * 1000), // 轉換為公尺
+              text: `${distance.toFixed(1)} km`
+            }
+          }]
+        };
+      } catch (error) {
+        logger.warn('無法解析批量請求中的起點座標', { error, originPoint });
+        
+        // 對於無法解析的點，返回默認值
+        return {
+          elements: [{
+            status: 'OK',
+            duration: {
+              value: 1200, // 20分鐘
+              text: '20 mins'
+            },
+            distance: {
+              value: 6000, // 6公里
+              text: '6 km'
+            }
+          }]
+        };
+      }
+    });
+    
+    return {
+      status: 'OK',
+      rows
+    };
+  }
+  
+  // 單一起點的情況
+  try {
+    // 解析起點座標
+    const [originLat, originLng] = origin.split(',').map(Number);
+    
+    if (isNaN(originLat) || isNaN(originLng)) {
+      throw new Error('無效的起點座標格式');
+    }
+    
+    // 計算距離（公里）
+    const distance = calculateDistance([originLat, originLng], destCoords);
+    
+    // 根據交通方式估算時間（秒）
+    const durationSeconds = calculateDuration(distance, mode);
+    
+    return {
+      status: 'OK',
+      rows: [{
+        elements: [{
+          status: 'OK',
+          duration: {
+            value: Math.round(durationSeconds),
+            text: `${Math.round(durationSeconds / 60)} mins`
+          },
+          distance: {
+            value: Math.round(distance * 1000), // 轉換為公尺
+            text: `${distance.toFixed(1)} km`
+          }
+        }]
+      }]
+    };
+  } catch (error) {
+    logger.warn('無法解析起點座標，使用預設模擬數據', { error, origin });
     return {
       status: 'OK',
       rows: [{
@@ -155,42 +266,23 @@ function generateMockDistanceMatrix(origin: string, destination: string, mode = 
       }]
     };
   }
-  
-  // 計算直線距離（公里）
-  const distance = calculateDistance(originCoords, destCoords);
-  
-  // 根據交通方式估算時間（秒）
-  let durationSeconds;
+}
+
+/**
+ * 根據距離和交通方式計算時間（秒）
+ */
+function calculateDuration(distanceKm: number, mode: string): number {
   switch (mode) {
     case 'walking':
       // 假設步行速度 5 km/h
-      durationSeconds = (distance / 5) * 3600;
-      break;
+      return (distanceKm / 5) * 3600;
     case 'transit':
       // 假設公共交通速度 20 km/h
-      durationSeconds = (distance / 20) * 3600;
-      break;
+      return (distanceKm / 20) * 3600;
     default: // driving
       // 假設駕車速度 40 km/h
-      durationSeconds = (distance / 40) * 3600;
+      return (distanceKm / 40) * 3600;
   }
-  
-  return {
-    status: 'OK',
-    rows: [{
-      elements: [{
-        status: 'OK',
-        duration: {
-          value: Math.round(durationSeconds),
-          text: `${Math.round(durationSeconds / 60)} mins`
-        },
-        distance: {
-          value: Math.round(distance * 1000), // 轉換為公尺
-          text: `${distance.toFixed(1)} km`
-        }
-      }]
-    }]
-  };
 }
 
 /**
@@ -218,11 +310,11 @@ function calculateDistance(coords1: [number, number], coords2: [number, number])
  * @param params 等時線參數
  */
 export async function getIsochroneData(params: IsochroneParams): Promise<any> {
-  const { location, minutes, mode } = params;
+  const { location, minutes, mode, maxDistance = 5 } = params; // 解構maxDistance參數
   
   try {
-    // 創建緩存鍵
-    const cacheKey = `isochrone:${location[0]},${location[1]}:${minutes}:${mode}`;
+    // 創建緩存鍵（包含maxDistance）
+    const cacheKey = `isochrone:${location[0]},${location[1]}:${minutes}:${mode}:${maxDistance}`;
 
     // 檢查緩存
     const cachedData = await redisClient.get(cacheKey);
@@ -233,7 +325,7 @@ export async function getIsochroneData(params: IsochroneParams): Promise<any> {
     // 開發環境下直接使用備用方法生成圓形等時線
     if (process.env.NODE_ENV === 'development' || !process.env.ORS_API_KEY) {
       logger.info('使用模擬等時線數據');
-      return generateFallbackIsochrone(location, minutes);
+      return generateFallbackIsochrone(location, minutes, maxDistance); // 傳入maxDistance
     }
 
     // 嘗試使用第三方 API
@@ -266,12 +358,12 @@ export async function getIsochroneData(params: IsochroneParams): Promise<any> {
     } catch (apiError) {
       logger.error('第三方等時線 API 請求失敗', { error: apiError });
       // 如果 API 調用失敗，使用備用方法
-      return generateFallbackIsochrone(location, minutes);
+      return generateFallbackIsochrone(location, minutes, maxDistance); // 傳入maxDistance
     }
   } catch (error) {
     logger.error('獲取等時線數據失敗', { error, location, minutes, mode });
     // 如果原始 API 失敗，返回一個簡單的圓形等時線
-    return generateFallbackIsochrone(location, minutes);
+    return generateFallbackIsochrone(location, minutes, maxDistance); // 傳入maxDistance
   }
 }
 
@@ -279,11 +371,16 @@ export async function getIsochroneData(params: IsochroneParams): Promise<any> {
  * 生成一個簡單的圓形等時線作為備用
  * @param center 中心點
  * @param minutes 分鐘數
+ * @param maxDistance 最大距離（公里）
  */
-function generateFallbackIsochrone(center: [number, number], minutes: number): any {
-  // 估算的半徑（公里）
-  // 開車約每分鐘 0.5 公里
-  let radiusKm = minutes * 0.5;
+function generateFallbackIsochrone(center: [number, number], minutes: number, maxDistance: number = 5): any {
+  // 直接使用maxDistance作為半徑，但確保不超過合理範圍
+  let radiusKm = Math.min(maxDistance, 15); // 最大限制15公里
+
+  // 確保最小半徑為0.5公里
+  radiusKm = Math.max(radiusKm, 0.5);
+
+  logger.info(`生成等時線圓形，半徑: ${radiusKm}公里 (基於最大距離: ${maxDistance}公里)`);
 
   // 生成一個簡單的圓形 GeoJSON
   const circle = {
@@ -295,6 +392,7 @@ function generateFallbackIsochrone(center: [number, number], minutes: number): a
           center: center,
           radius: radiusKm,
           minutes: minutes,
+          maxDistance: maxDistance,
           travelMode: 'driving',
           generated: 'fallback',
         },

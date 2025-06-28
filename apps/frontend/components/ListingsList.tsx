@@ -24,6 +24,15 @@ const ListingItem: FC<{ listing: ListingBasic }> = ({ listing }) => {
         )}
       </div>
       
+      <div className="mb-3">
+        <span className="inline-block text-xs text-gray-600 bg-gray-100 px-2 py-1 rounded-full mr-1">
+          {listing.city}
+        </span>
+        <span className="inline-block text-xs text-gray-600 bg-gray-100 px-2 py-1 rounded-full">
+          {listing.district}
+        </span>
+      </div>
+      
       <Link href={`/listings/${listing.id}`} className="btn btn-primary w-full text-center text-sm">
         查看詳情
       </Link>
@@ -73,10 +82,13 @@ const ListingsList: FC = () => {
   if (availableListings.length === 0) {
     return (
       <div className="p-4 text-center text-gray-600">
-        找不到符合條件的租屋物件，請嘗試調整搜尋條件
+        找不到符合條件的租屋物件，請嘗試調整搜尋條件或增加通勤時間上限
       </div>
     );
   }
+
+  // 依照價格排序
+  const sortedListings = [...availableListings].sort((a, b) => a.price - b.price);
 
   return (
     <div className="p-4">
@@ -84,7 +96,7 @@ const ListingsList: FC = () => {
         找到 {availableListings.length} 個符合條件的租屋物件
       </div>
       <div className="grid grid-cols-1 gap-4">
-        {availableListings.map((listing: ListingBasic) => (
+        {sortedListings.map((listing: ListingBasic) => (
           <ListingItem key={listing.id} listing={listing} />
         ))}
       </div>

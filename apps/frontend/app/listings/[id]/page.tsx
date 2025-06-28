@@ -1,10 +1,18 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { ListingDetail } from "@/types";
 import { getListingDetail } from "@/utils/api";
+import mapboxgl from "mapbox-gl";
+import "mapbox-gl/dist/mapbox-gl.css";
+
+// 從環境變數獲取 Mapbox API Key
+const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_API_KEY;
+if (typeof window !== 'undefined' && MAPBOX_TOKEN) {
+  mapboxgl.accessToken = MAPBOX_TOKEN;
+}
 
 export default function ListingDetailPage({
   params,
@@ -14,6 +22,8 @@ export default function ListingDetailPage({
   const [listing, setListing] = useState<ListingDetail | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const mapContainer = useRef<HTMLDivElement>(null);
+  const map = useRef<mapboxgl.Map | null>(null);
 
   useEffect(() => {
     const fetchListing = async () => {
@@ -32,6 +42,47 @@ export default function ListingDetailPage({
 
     fetchListing();
   }, [params.id]);
+
+  // 初始化地圖
+  useEffect(() => {
+    if (!listing || !mapContainer.current || !MAPBOX_TOKEN || map.current) return;
+
+    try {
+      const [lng, lat] = listing.coordinates;
+      
+      map.current = new mapboxgl.Map({
+        container: mapContainer.current,
+        style: "mapbox://styles/mapbox/streets-v11",
+        center: [lng, lat],
+        zoom: 15,
+        interactive: true,
+      });
+
+      // 添加導航控制
+      map.current.addControl(
+        new mapboxgl.NavigationControl({ showCompass: false }),
+        "top-right"
+      );
+
+      // 添加標記
+      new mapboxgl.Marker({ color: "#4c70f7" })
+        .setLngLat([lng, lat])
+        .setPopup(
+          new mapboxgl.Popup({ offset: 25 })
+            .setHTML(`<h3 class="font-bold">${listing.title}</h3><p>${listing.address}</p>`)
+        )
+        .addTo(map.current);
+    } catch (error) {
+      console.error("初始化地圖失敗:", error);
+    }
+
+    return () => {
+      if (map.current) {
+        map.current.remove();
+        map.current = null;
+      }
+    };
+  }, [listing]);
 
   if (isLoading) {
     return (
@@ -118,11 +169,23 @@ export default function ListingDetailPage({
           </div>
         </div>
 
-        {/* 基本資訊 */}
-        <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6 border-b border-gray-200">
+        {/* 地圖和基本資訊 */}
+        <div className="p-6 grid grid-cols-1 lg:grid-cols-2 gap-6 border-b border-gray-200">
+          {/* 左側：地圖 */}
+          <div className="h-80 rounded-lg overflow-hidden shadow-inner">
+            {MAPBOX_TOKEN ? (
+              <div ref={mapContainer} className="w-full h-full" />
+            ) : (
+              <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+                <p className="text-gray-500">地圖 API 金鑰缺失</p>
+              </div>
+            )}
+          </div>
+
+          {/* 右側：基本資訊 */}
           <div>
             <h2 className="text-xl font-semibold text-gray-900 mb-4">基本資訊</h2>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-4 mb-4">
               <div>
                 <div className="text-sm text-gray-500">坪數</div>
                 <div className="text-lg font-medium">{listing.size_ping} 坪</div>
@@ -143,20 +206,18 @@ export default function ListingDetailPage({
                 <div>
                   <div className="text-sm text-gray-500">樓層</div>
                   <div className="text-lg font-medium">
-                    {listing.floor} / {listing.total_floor}
+                    {listing.floor} {listing.total_floor && `/ ${listing.total_floor}`}
                   </div>
                 </div>
               )}
             </div>
-          </div>
 
-          <div>
             <h2 className="text-xl font-semibold text-gray-900 mb-4">位置資訊</h2>
             <div className="mb-2">
               <div className="text-sm text-gray-500">地址</div>
               <div className="text-lg font-medium">{listing.address}</div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-4 mb-4">
               <div>
                 <div className="text-sm text-gray-500">城市</div>
                 <div className="text-lg font-medium">{listing.city}</div>
@@ -165,6 +226,14 @@ export default function ListingDetailPage({
                 <div className="text-sm text-gray-500">行政區</div>
                 <div className="text-lg font-medium">{listing.district}</div>
               </div>
+              {listing.commute_time && (
+                <div>
+                  <div className="text-sm text-gray-500">估計通勤時間</div>
+                  <div className="text-lg font-medium text-green-600">
+                    {listing.commute_time} 分鐘
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -220,6 +289,25 @@ export default function ListingDetailPage({
                 <div className="text-sm text-gray-500">電話</div>
                 <div className="text-lg font-medium">{listing.contact_phone}</div>
               </div>
+            )}
+          </div>
+          
+          <div className="mt-6 flex flex-col sm:flex-row gap-3">
+            <button className="btn btn-primary flex-1 sm:flex-none px-6">
+              聯絡房東
+            </button>
+            {listing.url && (
+              <a
+                href={listing.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn btn-secondary flex-1 sm:flex-none px-6 inline-flex items-center justify-center"
+              >
+                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                </svg>
+                查看原始頁面
+              </a>
             )}
           </div>
         </div>

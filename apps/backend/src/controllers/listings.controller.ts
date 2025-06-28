@@ -104,6 +104,7 @@ export class ListingsController {
         id: listing.id,
         title: listing.title,
         source_id: listing.sourceId,
+        url: listing.url,
         price: listing.price,
         size_ping: listing.sizePing,
         house_type: listing.houseType,
