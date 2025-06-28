@@ -179,8 +179,8 @@ export async function importListingsFromCrawlerData(
         // 處理房屋類型 - 優先使用新版本欄位
         const houseType = item.house_type || item.houseType;
         
-        // 確定資料來源
-        const dataSource = item.url?.includes('houseprice.tw') ? 'houseprice' : '591';
+        // 確定資料來源 - 現在只支援 houseprice
+        const dataSource = 'houseprice';
         
         // 嘗試查找現有物件
         const existingListing = await prisma.listing.findFirst({

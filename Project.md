@@ -138,7 +138,7 @@ GET /api/listings?lat={lat}&lng={lng}&time={minutes}：回傳符合通勤時間�
 七、排程與監控
 Cron Job 設定：
 
-確認 Linux 主機時區（Asia/Taipei），於 crontab -e 中加入每日凌晨爬蟲任務，例如 0 3 * * * /usr/bin/python3 /path/to/scraper.py 
+確認 Linux 主機時區（Asia/Taipei），於 crontab -e 中加入每日凌晨爬蟲任務，例如 0 3 * * * /usr/bin/python3 /path/to/crawler.py 
 FreeCodeCamp
 Hostinger
 。

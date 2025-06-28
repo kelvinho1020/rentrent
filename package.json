@@ -11,8 +11,9 @@
     "backend:start": "pnpm --filter rentrent-backend run start",
     "backend:migrate": "pnpm --filter rentrent-backend run migrate",
     "backend:seed": "pnpm --filter rentrent-backend run seed",
-    "scraper": "cd apps/scraper && python main.py",
-    "docker:up": "docker-compose up -d",
+    "crawler": "cd apps/crawler && python crawler.py",
+    "docker:infra": "docker-compose up -d db redis",
+    "docker:all": "docker-compose --profile crawler up -d",
     "docker:down": "docker-compose down",
     "docker:build": "docker-compose build",
     "setup": "./scripts/setup.sh"

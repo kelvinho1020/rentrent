@@ -37,7 +37,7 @@ async function main() {
       totalFloor: 12,
       longitude: 121.5341,
       latitude: 25.0307,
-      source: '591'
+      source: 'houseprice'
     },
     // 台北市信義區
     {
@@ -59,7 +59,7 @@ async function main() {
       totalFloor: 15,
       longitude: 121.5677,
       latitude: 25.0323,
-      source: '591'
+      source: 'houseprice'
     },
     // 台北市中山區
     {
@@ -81,7 +81,7 @@ async function main() {
       totalFloor: 7,
       longitude: 121.5228,
       latitude: 25.0526,
-      source: '591'
+      source: 'houseprice'
     },
     // 台北市內湖區
     {
@@ -103,7 +103,7 @@ async function main() {
       totalFloor: 12,
       longitude: 121.5766,
       latitude: 25.0794,
-      source: '591'
+      source: 'houseprice'
     },
     // 新北市板橋區
     {
@@ -125,7 +125,7 @@ async function main() {
       totalFloor: 8,
       longitude: 121.4728,
       latitude: 25.0294,
-      source: '591'
+      source: 'houseprice'
     }
   ];
 

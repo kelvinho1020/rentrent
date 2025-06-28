@@ -33,8 +33,5 @@ COPY . .
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 
-# 暴露端口（如果你的應用需要）
-EXPOSE 8000
-
-# 執行命令
-CMD ["python", "app.py"] 
+# 預設執行爬蟲程式
+CMD ["python", "crawler.py"] 

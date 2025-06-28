@@ -61,43 +61,4 @@ model CommuteTime {
   @@map("commute_times")
 }
 
-model User {
-  id               Int               @id @default(autoincrement())
-  email            String            @unique
-  passwordHash     String            @map("password_hash")
-  name             String?
-  avatarUrl        String?           @map("avatar_url")
-  role             String            @default("user")
-  isActive         Boolean           @default(true) @map("is_active")
-  createdAt        DateTime          @default(now()) @map("created_at")
-  updatedAt        DateTime          @updatedAt @map("updated_at")
-  lastLoginAt      DateTime?         @map("last_login_at")
-  favoriteListings FavoriteListing[]
-  savedSearches    SavedSearch[]
 
-  @@map("users")
-}
-
-model SavedSearch {
-  id           Int      @id @default(autoincrement())
-  userId       Int      @map("user_id")
-  name         String
-  searchParams Json     @map("search_params")
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
-  user         User     @relation(fields: [userId], references: [id])
-
-  @@map("saved_searches")
-}
-
-model FavoriteListing {
-  id        Int      @id @default(autoincrement())
-  userId    Int      @map("user_id")
-  listingId Int      @map("listing_id")
-  notes     String?
-  createdAt DateTime @default(now()) @map("created_at")
-  user      User     @relation(fields: [userId], references: [id])
-
-  @@unique([userId, listingId])
-  @@map("favorite_listings")
-}
