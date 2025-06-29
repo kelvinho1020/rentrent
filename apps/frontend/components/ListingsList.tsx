@@ -93,7 +93,7 @@ const ListingsList: FC = () => {
   return (
     <div className="p-4">
       <div className="mb-4 text-gray-700 font-medium">
-        找到 {availableListings.length} 個符合條件的租屋物件
+        篩選結果：{availableListings.length} 個租屋物件
       </div>
       <div className="grid grid-cols-1 gap-4">
         {sortedListings.map((listing: ListingBasic) => (

@@ -1,27 +1,27 @@
 #!/bin/bash
 
-# 檢查 .env 文件是否存在，若不存在則從範例文件複製
-if [ ! -f .env ]; then
-  echo "Creating .env file from .env.example..."
-  cp .env.example .env
-  echo "Please update .env file with your actual configuration before proceeding."
-  exit 1
+echo "🚀 RentRent 初始化腳本"
+echo "====================="
+
+# 檢查 Docker 是否運行
+if ! docker info > /dev/null 2>&1; then
+    echo "❌ Docker 未運行，請先啟動 Docker"
+    exit 1
 fi
 
-# 啟動 Docker 容器
-echo "Starting Docker containers..."
-docker-compose up -d
+# 構建並啟動服務
+echo "🔨 構建並啟動服務..."
+docker-compose up -d --build
 
-# 等待資料庫準備就緒
-echo "Waiting for database to be ready..."
-sleep 10
+# 等待資料庫就緒
+echo "⏳ 等待資料庫啟動..."
+sleep 15
 
-# 初始化資料庫
-echo "Initializing database..."
-docker-compose exec db psql -U postgres -d rentrent -f /docker-entrypoint-initdb.d/init.sql
+# 執行資料庫初始化
+echo "📦 初始化資料庫..."
+docker-compose exec -T backend npx prisma migrate deploy
 
-echo "Setup completed!"
-echo "You can now access:"
-echo "- Frontend: http://localhost:3000"
-echo "- Backend API: http://localhost:8000"
-echo "- API Documentation: http://localhost:8000/docs" 
+echo ""
+echo "🎉 初始化完成！"
+echo "📱 前端: http://localhost:3000"
+echo "🔧 後端: http://localhost:8000"

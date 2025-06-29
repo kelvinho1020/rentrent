@@ -1,6 +1,5 @@
 import dotenv from 'dotenv';
 
-// 加載環境變量
 dotenv.config();
 
 interface Config {

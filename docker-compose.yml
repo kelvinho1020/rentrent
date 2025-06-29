@@ -1,4 +1,50 @@
 services:
+  # 前端服務
+  frontend:
+    build:
+      context: .
+      dockerfile: ./apps/frontend/Dockerfile
+    container_name: rentrent-frontend
+    ports:
+      - "3000:3000"
+    env_file:
+      - ./apps/frontend/.env
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8000/api
+    depends_on:
+      - backend
+    volumes:
+      - ./apps/frontend:/app/apps/frontend
+      - frontend_node_modules:/app/apps/frontend/node_modules
+      - frontend_next_cache:/app/apps/frontend/.next
+    networks:
+      - rentrent-network
+
+  # 後端服務
+  backend:
+    build:
+      context: .
+      dockerfile: ./apps/backend/Dockerfile
+    container_name: rentrent-backend
+    ports:
+      - "8000:8000"
+    env_file:
+      - ./apps/backend/.env
+    environment:
+      - NODE_ENV=development
+      - DATABASE_URL=postgresql://postgres:postgres@db:5432/rentrent?schema=public
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./apps/backend:/app/apps/backend
+      - backend_node_modules:/app/apps/backend/node_modules
+    networks:
+      - rentrent-network
+
   # PostgreSQL 資料庫
   db:
     image: postgres:14
@@ -11,11 +57,14 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./apps/backend/prisma/migrations:/docker-entrypoint-initdb.d
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - rentrent-network
 
   # Redis 緩存
   redis:
@@ -31,23 +80,16 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-
-  # Python 爬蟲服務 (可選，可以直接在宿主機運行)
-  crawler:
-    build:
-      context: ./apps/crawler
-      dockerfile: Dockerfile
-    container_name: rentrent-crawler
-    environment:
-      - DATABASE_URL=postgresql://postgres:postgres@db:5432/rentrent?schema=public
-    depends_on:
-      db:
-        condition: service_healthy
-    volumes:
-      - ./apps/crawler:/app
-    profiles:
-      - crawler  # 使用 profile 讓爬蟲變成可選服務
+    networks:
+      - rentrent-network
 
 volumes:
   postgres_data:
-  redis_data: 
+  redis_data:
+  frontend_node_modules:
+  frontend_next_cache:
+  backend_node_modules:
+
+networks:
+  rentrent-network:
+    driver: bridge 

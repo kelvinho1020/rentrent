@@ -11,7 +11,7 @@ import ListingPopup from "./ListingPopup";
 // 從環境變數獲取 Mapbox API Key
 const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_API_KEY;
 if (!MAPBOX_TOKEN) {
-  console.error("Mapbox API key is missing! Set NEXT_PUBLIC_MAPBOX_API_KEY in .env.local");
+  console.error("Mapbox API key is missing! Set NEXT_PUBLIC_MAPBOX_API_KEY in .env");
 }
 mapboxgl.accessToken = MAPBOX_TOKEN || "";
 
@@ -176,13 +176,6 @@ export default function Map() {
     );
     
     markers.current.push(marker);
-    
-    // 移動地圖至新位置
-    map.current.flyTo({
-      center: [workLocation.longitude, workLocation.latitude],
-      zoom: 13,
-      essential: true,
-    });
     
     // 獲取等時線
     const fetchIsochrone = async () => {

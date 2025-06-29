@@ -67,9 +67,22 @@ const SearchPanel: FC = () => {
       
       // 顯示搜尋結果摘要
       if (response.note) {
-        setSearchResult(`找到 ${response.total} 筆資料 (${response.note})`);
+        setSearchResult(`找到 ${response.total} 筆符合條件的資料 (${response.note})`);
       } else {
-        setSearchResult(`找到 ${response.total} 筆符合通勤時間的租屋物件`);
+        setSearchResult(`找到 ${response.total} 筆符合條件的租屋物件`);
+      }
+      
+      // 如果有設定篩選條件，顯示更詳細的資訊
+      const filterInfo = [];
+      if (minPrice) filterInfo.push(`最低租金 ${minPrice.toLocaleString()}元`);
+      if (maxPrice) filterInfo.push(`最高租金 ${maxPrice.toLocaleString()}元`);
+      if (minSize) filterInfo.push(`最小坪數 ${minSize}坪`);
+      if (city) filterInfo.push(`城市: ${city}`);
+      if (district) filterInfo.push(`區域: ${district}`);
+      filterInfo.push(`通勤時間 ≤ ${commuteTime}分鐘`);
+      
+      if (filterInfo.length > 1) {
+        console.log(`🔍 篩選條件: ${filterInfo.join(', ')}`);
       }
     } catch (err) {
       console.error("搜尋失敗:", err);
@@ -77,6 +90,13 @@ const SearchPanel: FC = () => {
     } finally {
       setIsLoading(false);
       setFullPageLoading(false);
+    }
+  };
+
+  // 處理 disabled 按鈕點擊
+  const handleDisabledButtonClick = () => {
+    if (!workLocation) {
+      setError("請先在地圖上點選您的工作地點");
     }
   };
 
@@ -97,14 +117,22 @@ const SearchPanel: FC = () => {
       )}
       
       <div className="mb-4">
-        <label className="label mb-1">工作地點</label>
-        <div className="text-sm">
+        <label className="label mb-1">工作地點 <span className="text-red-500">*</span></label>
+        <div className={`text-sm p-3 rounded-md border ${workLocation ? 'bg-green-50 border-green-200' : 'bg-yellow-50 border-yellow-200'}`}>
           {workLocation ? (
-            <span className="text-green-600">
-              已選擇 (經度: {workLocation.longitude.toFixed(4)}, 緯度: {workLocation.latitude.toFixed(4)})
-            </span>
+            <div className="flex items-center">
+              <span className="text-green-600 mr-2">✓</span>
+              <span className="text-green-700 font-medium">
+                已選擇工作地點 ({workLocation.longitude.toFixed(4)}, {workLocation.latitude.toFixed(4)})
+              </span>
+            </div>
           ) : (
-            <span className="text-gray-500">請在地圖上點選位置</span>
+            <div className="flex items-center">
+              <span className="text-yellow-600 mr-2">⚠️</span>
+              <span className="text-yellow-700 font-medium">
+                請先在右側地圖上點選您的工作地點
+              </span>
+            </div>
           )}
         </div>
       </div>
@@ -202,20 +230,6 @@ const SearchPanel: FC = () => {
         </div>
       </div>
       
-      <div className="mb-4">
-        <label htmlFor="minSize" className="label mb-1">最小坪數</label>
-        <input
-          id="minSize"
-          type="number"
-          min={0}
-          step={1}
-          className="input"
-          placeholder="不限"
-          value={minSize || ""}
-          onChange={(e) => setMinSize(e.target.value ? Number(e.target.value) : undefined)}
-        />
-      </div>
-      
       <div className="grid grid-cols-2 gap-4 mb-4">
         <div>
           <label htmlFor="city" className="label mb-1">城市</label>
@@ -290,13 +304,20 @@ const SearchPanel: FC = () => {
         </div>
       </div>
       
-      <button 
-        className="btn btn-primary w-full" 
-        onClick={handleSearch}
-        disabled={!workLocation}
-      >
-        搜尋租屋
-      </button>
+      {/* 搜尋按鈕區域 */}
+      <div className="space-y-2">
+        <button 
+          className={`w-full font-medium py-3 px-4 rounded-md transition-all duration-200 ${
+            workLocation 
+              ? 'bg-primary-600 hover:bg-primary-700 text-white shadow-md hover:shadow-lg focus:ring-2 focus:ring-primary-500 focus:ring-offset-2' 
+              : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+          }`}
+          onClick={workLocation ? handleSearch : handleDisabledButtonClick}
+          disabled={!workLocation}
+        >
+          {workLocation ? '🔍 開始搜尋租屋' : '請先選擇地點'}
+        </button>
+      </div>
     </div>
   );
 };
