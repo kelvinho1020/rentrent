@@ -62,6 +62,214 @@ interface ImportResult {
   errorMessages?: string[]; // 錯誤信息
 }
 
+export interface BatchUpdateOptions {
+  batchSize?: number;
+  keepOldDataDays?: number;
+  preserveCommuteData?: boolean;
+}
+
+/**
+ * 批次更新：軟刪除策略
+ * 1. 標記所有現有資料為 inactive
+ * 2. 匯入新資料為 active
+ * 3. 清理過期資料
+ */
+export async function batchUpdateListings(
+  filePathOrData: string | object,
+  options: BatchUpdateOptions = {}
+): Promise<ImportResult & { strategy: string }> {
+  const startTime = Date.now();
+  const { 
+    batchSize = 1000, 
+    keepOldDataDays = 7,
+    preserveCommuteData = true 
+  } = options;
+
+  logger.info('🔄 開始批次更新租屋資料', {
+    strategy: 'soft-delete',
+    keepOldDataDays,
+    preserveCommuteData
+  });
+
+  try {
+    // 階段 1: 標記所有現有資料為 inactive
+    logger.info('📋 階段 1: 標記現有資料為 inactive');
+    const markInactiveResult = await prisma.listing.updateMany({
+      where: { isActive: true },
+      data: { 
+        isActive: false,
+        updatedAt: new Date()
+      }
+    });
+    logger.info(`✅ 已標記 ${markInactiveResult.count} 筆資料為 inactive`);
+
+    // 階段 2: 匯入新資料（自動設為 active）
+    logger.info('📥 階段 2: 匯入新資料');
+    const importResult = await importListingsFromCrawlerData(filePathOrData);
+    
+    // 確保新資料都是 active 的
+    await prisma.listing.updateMany({
+      where: { 
+        isActive: false,
+        updatedAt: { gte: new Date(startTime) }
+      },
+      data: { isActive: true }
+    });
+
+    // 階段 3: 統計結果
+    const activeCount = await prisma.listing.count({ where: { isActive: true } });
+    const inactiveCount = await prisma.listing.count({ where: { isActive: false } });
+    
+    logger.info('📊 批次更新完成', {
+      activeListings: activeCount,
+      inactiveListings: inactiveCount,
+      importStats: importResult
+    });
+
+    return {
+      ...importResult,
+      strategy: 'soft-delete-batch-update'
+    };
+
+  } catch (error) {
+    logger.error('❌ 批次更新失敗，回滾變更', { error });
+    
+    // 回滾：重新激活之前的資料
+    await prisma.listing.updateMany({
+      where: { 
+        isActive: false,
+        updatedAt: { lt: new Date(startTime) }
+      },
+      data: { isActive: true }
+    });
+    
+    throw error;
+  }
+}
+
+/**
+ * 清理過期的 inactive 資料
+ */
+export async function cleanupOldListings(keepDays: number = 7): Promise<{
+  deletedListings: number;
+  preservedCommuteData: boolean;
+}> {
+  logger.info(`🧹 開始清理 ${keepDays} 天前的 inactive 資料`);
+  
+  const cutoffDate = new Date();
+  cutoffDate.setDate(cutoffDate.getDate() - keepDays);
+
+  try {
+    // 查找要刪除的 listings
+    const oldInactiveListings = await prisma.listing.findMany({
+      where: {
+        isActive: false,
+        updatedAt: { lt: cutoffDate }
+      },
+      select: { id: true }
+    });
+
+    const listingIds = oldInactiveListings.map(l => l.id);
+    
+    if (listingIds.length === 0) {
+      logger.info('✅ 沒有需要清理的過期資料');
+      return { deletedListings: 0, preservedCommuteData: false };
+    }
+
+    // 先刪除相關的通勤時間資料
+    const deletedCommuteData = await prisma.commuteTime.deleteMany({
+      where: { originId: { in: listingIds } }
+    });
+
+    // 再刪除 listings
+    const deletedListings = await prisma.listing.deleteMany({
+      where: { id: { in: listingIds } }
+    });
+
+    logger.info('🗑️ 清理完成', {
+      deletedListings: deletedListings.count,
+      deletedCommuteData: deletedCommuteData.count,
+      cutoffDate: cutoffDate.toISOString()
+    });
+
+    return {
+      deletedListings: deletedListings.count,
+      preservedCommuteData: false
+    };
+
+  } catch (error) {
+    logger.error('❌ 清理過期資料失敗', { error });
+    throw error;
+  }
+}
+
+/**
+ * 智慧清理：保留有通勤時間的資料
+ */
+export async function smartCleanupOldListings(keepDays: number = 7): Promise<{
+  deletedListings: number;
+  preservedListings: number;
+  preservedCommuteData: boolean;
+}> {
+  logger.info(`🧠 開始智慧清理 ${keepDays} 天前的 inactive 資料`);
+  
+  const cutoffDate = new Date();
+  cutoffDate.setDate(cutoffDate.getDate() - keepDays);
+
+  try {
+    // 查找沒有通勤時間資料的舊 listings
+    const listingsToDelete = await prisma.listing.findMany({
+      where: {
+        isActive: false,
+        updatedAt: { lt: cutoffDate },
+        commuteTimes: { none: {} }  // 沒有通勤時間資料
+      },
+      select: { id: true }
+    });
+
+    // 查找有通勤時間資料的舊 listings（保留）
+    const listingsToPreserve = await prisma.listing.count({
+      where: {
+        isActive: false,
+        updatedAt: { lt: cutoffDate },
+        commuteTimes: { some: {} }  // 有通勤時間資料
+      }
+    });
+
+    const listingIdsToDelete = listingsToDelete.map(l => l.id);
+    
+    if (listingIdsToDelete.length === 0) {
+      logger.info('✅ 沒有需要清理的無通勤時間資料');
+      return { 
+        deletedListings: 0, 
+        preservedListings: listingsToPreserve,
+        preservedCommuteData: true 
+      };
+    }
+
+    // 刪除沒有通勤時間的 listings
+    const deletedResult = await prisma.listing.deleteMany({
+      where: { id: { in: listingIdsToDelete } }
+    });
+
+    logger.info('🎯 智慧清理完成', {
+      deletedListings: deletedResult.count,
+      preservedListings: listingsToPreserve,
+      reason: '保留有通勤時間資料的物件'
+    });
+
+    return {
+      deletedListings: deletedResult.count,
+      preservedListings: listingsToPreserve,
+      preservedCommuteData: true
+    };
+
+  } catch (error) {
+    logger.error('❌ 智慧清理失敗', { error });
+    throw error;
+  }
+}
+
 /**
  * 從爬蟲數據文件導入租屋物件到數據庫
  * @param filePath 爬蟲數據 JSON 文件路徑

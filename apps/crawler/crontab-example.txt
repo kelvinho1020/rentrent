@@ -1,0 +1,41 @@
+# 每日租屋資料更新 Cron Job 範例
+# 編輯方法: crontab -e
+# 查看方法: crontab -l
+
+# 每天凌晨 3:00 執行更新（建議時間，避開高峰期）
+0 3 * * * cd /path/to/rentrent/apps/crawler && /usr/bin/python3 daily_update.py --cleanup-days=7 >> logs/cron.log 2>&1
+
+# 每週日凌晨 2:00 執行更大規模的清理（保留3天資料）
+0 2 * * 0 cd /path/to/rentrent/apps/crawler && /usr/bin/python3 daily_update.py --cleanup-days=3 >> logs/cron_weekly.log 2>&1
+
+# 每小時檢查爬蟲狀態（測試模式）
+# 0 * * * * cd /path/to/rentrent/apps/crawler && /usr/bin/python3 daily_update.py --test >> logs/health_check.log 2>&1
+
+# 時間格式說明:
+# ┌───────────── 分鐘 (0 - 59)
+# │ ┌─────────── 小時 (0 - 23)
+# │ │ ┌───────── 日期 (1 - 31)
+# │ │ │ ┌─────── 月份 (1 - 12)
+# │ │ │ │ ┌───── 星期 (0 - 6) (星期日=0 或 7)
+# │ │ │ │ │
+# * * * * * 命令
+
+# 範例時間：
+# 0 3 * * *     每天凌晨 3:00
+# 30 2 * * 0    每週日凌晨 2:30
+# 0 */6 * * *   每 6 小時一次
+# 0 3 1 * *     每月 1 號凌晨 3:00
+
+# 重要提醒：
+# 1. 將 /path/to/rentrent 替換為實際項目路徑
+# 2. 確認 Python 路徑正確 (which python3)
+# 3. 確保項目有執行權限
+# 4. 建議先測試 daily_update.py --test
+# 5. 監控日誌檔案大小，定期清理
+
+# 進階配置：
+# 設定環境變數
+# SHELL=/bin/bash
+# PATH=/usr/local/bin:/usr/bin:/bin
+# 
+# 0 3 * * * cd /path/to/rentrent/apps/crawler && /usr/bin/python3 daily_update.py --backend-url=http://localhost:8000 

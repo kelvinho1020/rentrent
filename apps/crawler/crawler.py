@@ -883,8 +883,8 @@ def crawl_5168_all_regions():
         
         # 定義不同地區的URL - 每個地區抓20個房屋
         region_urls = {
-            "台北市": "https://rent.houseprice.tw",  # 主頁主要是台北市
-            "新北市": "https://rent.houseprice.tw/list/21_usage/27-26-15-23-33-28-32-36-37-34-35-31-29-30-38-39-40-41-14-13-16-20-19-21-22-18-17-24-25_zip/?p=1"  # 新北市專用URL
+            "新北市": "https://rent.houseprice.tw/list/21_usage/27-26-15-23-33-28-32-36-37-34-35-31-29-30-38-39-40-41-14-13-16-20-19-21-22-18-17-24-25_zip/?p=1",  # 新北市專用URL - 先爬新北
+            "台北市": "https://rent.houseprice.tw"  # 主頁主要是台北市 - 後爬台北
         }
         
         all_house_data = []  # 存儲所有房屋的詳細數據
@@ -911,7 +911,7 @@ def crawl_5168_all_regions():
                         print(f"❌ 從 {region_name} 未收集到資料")
                     
                     print(f"🔄 {region_name} 處理完成，準備處理下一個地區...")
-                    time.sleep(3)  # 地區間休息
+                    time.sleep(5)  # 地區間休息時間增加
                 else:
                     print(f"❌ 無法訪問 {region_name} 頁面")
             except Exception as e:
@@ -971,7 +971,7 @@ def crawl_current_page(browser, base_url, target_region=None):
     current_page = 1
     has_next_page = True
     max_pages = 3  # 每個地區爬取3頁，確保能抓到20個
-    min_houses_per_region = 20  # 每個地區抓20筆資料
+    min_houses_per_region = 40  # 每個地區抓40筆資料
     successful_houses = 0  # 成功爬取的房屋數量
     failed_houses = 0     # 失敗的房屋數量
     

@@ -12,6 +12,8 @@
     "backend:migrate": "pnpm --filter rentrent-backend run migrate",
     "backend:seed": "pnpm --filter rentrent-backend run seed",
     "crawler": "cd apps/crawler && python crawler.py",
+    "crawler:update": "cd apps/crawler && python daily_update.py",
+    "crawler:test": "cd apps/crawler && python daily_update.py --test",
     "docker:infra": "docker-compose up -d db redis",
     "docker:all": "docker-compose --profile crawler up -d",
     "docker:down": "docker-compose down",

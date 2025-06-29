@@ -22,7 +22,9 @@ export class ListingsController {
       } = req.query;
 
       // 構建查詢條件
-      const where: any = {};
+      const where: any = {
+        isActive: true  // 只顯示 active 的租屋資料
+      };
 
       if (city) where.city = city;
       if (district) where.district = district;
@@ -85,8 +87,11 @@ export class ListingsController {
     try {
       const { id } = req.params;
 
-      const listing = await prisma.listing.findUnique({
-        where: { id: Number(id) },
+      const listing = await prisma.listing.findFirst({
+        where: { 
+          id: Number(id),
+          isActive: true  // 只顯示 active 的租屋資料
+        },
       });
 
       if (!listing) {
@@ -142,6 +147,7 @@ export class ListingsController {
   public getCities = async (_req: Request, res: Response): Promise<void> => {
     try {
       const cities = await prisma.listing.findMany({
+        where: { isActive: true },
         select: { city: true },
         distinct: ['city'],
       });
@@ -165,7 +171,9 @@ export class ListingsController {
     try {
       const { city } = req.query;
 
-      const where = city ? { city: city.toString() } : {};
+      const where = city 
+        ? { city: city.toString(), isActive: true } 
+        : { isActive: true };
 
       const districts = await prisma.listing.findMany({
         where,

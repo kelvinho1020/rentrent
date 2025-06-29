@@ -5,6 +5,10 @@ import json
 import time
 import random
 import traceback
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.chrome.service import Service
 
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from crawler import setup_browser, safe_get_page, crawl_house_details, determine_city_from_coordinates
@@ -15,18 +19,18 @@ def stable_dual_city_crawl():
     all_data = []
     
     try:
-        # 明確定義兩個地區的處理順序
+        # 明確定義兩個地區的處理順序，先爬新北
         regions = [
-            {
-                "name": "台北市",
-                "url": "https://rent.houseprice.tw",
-                "target_count": 30,  # 台北市目標30筆
-                "max_pages": 3
-            },
             {
                 "name": "新北市", 
                 "url": "https://rent.houseprice.tw/list/21_usage/27-26-15-23-33-28-32-36-37-34-35-31-29-30-38-39-40-41-14-13-16-20-19-21-22-18-17-24-25_zip/?p=1",
-                "target_count": 25,  # 新北市目標25筆
+                "target_count": 40,  # 新北市目標40筆
+                "max_pages": 3
+            },
+            {
+                "name": "台北市",
+                "url": "https://rent.houseprice.tw",
+                "target_count": 40,  # 台北市目標40筆
                 "max_pages": 3
             }
         ]
@@ -241,7 +245,7 @@ def stable_dual_city_crawl():
 
 if __name__ == "__main__":
     print("🚀 開始穩定雙城市爬蟲...")
-    print("📋 將依序處理: 台北市 → 新北市")
+    print("📋 將依序處理: 新北市 → 台北市")
     print("🎯 確保不會中途停止")
     print("🗺️ 包含詳細地區資訊抓取")
     print("\n開始執行...")
