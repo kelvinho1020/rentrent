@@ -1,8 +1,7 @@
-import { Request, Response, NextFunction } from 'express';
+import { Request, Response } from 'express';
 import { StatusCodes } from 'http-status-codes';
 import { logger } from '../utils/logger';
 
-// 自定義錯誤類型
 interface AppError extends Error {
   statusCode?: number;
 }
@@ -11,8 +10,6 @@ export const errorHandler = (
   err: AppError,
   req: Request,
   res: Response,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  next: NextFunction
 ) => {
   const statusCode = err.statusCode || StatusCodes.INTERNAL_SERVER_ERROR;
   const message = err.message || '伺服器錯誤';

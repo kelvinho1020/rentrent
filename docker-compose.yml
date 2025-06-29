@@ -35,10 +35,8 @@ services:
       - DATABASE_URL=postgresql://postgres:postgres@db:5432/rentrent?schema=public
       - REDIS_URL=redis://redis:6379
     depends_on:
-      db:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
+      - db
+      - redis
     volumes:
       - ./apps/backend:/app/apps/backend
       - backend_node_modules:/app/apps/backend/node_modules
@@ -58,11 +56,6 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./apps/backend/prisma/migrations:/docker-entrypoint-initdb.d
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
     networks:
       - rentrent-network
 
@@ -75,11 +68,6 @@ services:
     volumes:
       - redis_data:/data
     command: redis-server --appendonly yes
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
     networks:
       - rentrent-network
 

@@ -43,9 +43,9 @@ export default function Home() {
         <FullPageLoading message={fullPageLoadingMessage} />
       )}
       
-      <div className="flex-1 grid grid-cols-12 h-full overflow-hidden">
+      <div className="flex-1 grid grid-cols-12 h-full">
         {/* 左側面板 */}
-        <div className="col-span-12 md:col-span-4 lg:col-span-3 border-r border-gray-200 flex flex-col h-full overflow-hidden">
+        <div className="col-span-12 md:col-span-4 lg:col-span-3 border-r border-gray-200 flex flex-col h-full">
           {/* 頁籤切換 */}
           <div className="flex border-b border-gray-200">
             <button
@@ -78,7 +78,7 @@ export default function Home() {
         </div>
 
         {/* 地圖區域 */}
-        <div className={`col-span-12 md:col-span-8 lg:col-span-9 h-full transition-opacity duration-500 ${mapLoaded ? 'opacity-100' : 'opacity-0'}`}>
+        <div className={`col-span-12 md:col-span-8 lg:col-span-9 min-h-screen h-full lg:min-h-0 lg:h-auto transition-opacity duration-500 ${mapLoaded ? 'opacity-100' : 'opacity-0'}`}>
           <Map />
         </div>
       </div>

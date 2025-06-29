@@ -292,10 +292,7 @@ export default function ListingDetailPage({
             )}
           </div>
           
-          <div className="mt-6 flex flex-col sm:flex-row gap-3">
-            <button className="btn btn-primary flex-1 sm:flex-none px-6">
-              聯絡房東
-            </button>
+          <div className="mt-3 flex flex-col sm:flex-row gap-3">
             {listing.url && (
               <a
                 href={listing.url}

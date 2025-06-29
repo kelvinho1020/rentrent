@@ -4,7 +4,6 @@
   "private": true,
   "description": "以通勤時間為核心的租屋搜尋平台",
   "scripts": {
-    "setup": "./scripts/quick-start.sh",
     "dev": "docker-compose up -d",
     "dev:build": "docker-compose up -d --build",
     "stop": "docker-compose down",

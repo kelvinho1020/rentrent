@@ -63,6 +63,13 @@ export async function findListingsByCommuteTime(
   logger.info('開始搜尋符合通勤時間的租屋物件', params);
 
   try {
+    // 解析目的地座標
+    const [destLat, destLng] = params.destination.split(',').map(Number);
+    
+    if (isNaN(destLat) || isNaN(destLng)) {
+      throw new Error('目的地座標格式無效');
+    }
+
     // 構建資料庫查詢條件
     const where: any = { isActive: true };
 
@@ -76,7 +83,7 @@ export async function findListingsByCommuteTime(
     if (params.filter.district) where.district = params.filter.district;
 
     // 獲取所有符合基本條件的租屋物件
-    const listings = await prisma.listing.findMany({
+    const allListings = await prisma.listing.findMany({
       where,
       select: {
         id: true,
@@ -104,7 +111,19 @@ export async function findListingsByCommuteTime(
       },
     });
 
-    logger.debug(`找到 ${listings.length} 筆符合基本條件的物件`);
+    logger.debug(`找到 ${allListings.length} 筆符合基本條件的物件`);
+
+    // 🎯 加入圓形距離篩選
+    const maxDistanceKm = params.filter.maxCommuteDistance || 10; // 默認 10 公里
+    const listings = allListings.filter(listing => {
+      const distance = calculateDirectDistance(
+        destLat, destLng,
+        listing.latitude, listing.longitude
+      );
+      return distance <= maxDistanceKm;
+    });
+
+    logger.info(`圓形距離篩選: ${listings.length}/${allListings.length} 筆物件在 ${maxDistanceKm}km 範圍內`);
 
     // 處理結果列表
     const result: ListingWithCommuteTime[] = [];

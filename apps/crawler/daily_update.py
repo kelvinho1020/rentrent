@@ -5,15 +5,6 @@
 
 使用方法:
   python daily_update.py [--test] [--cleanup-days=7] [--batch-size=1000]
-
-策略:
-1. 爬取最新資料
-2. 使用軟刪除批次更新
-3. 智慧清理過期資料
-4. 發送更新報告
-
-作者: AI Assistant
-日期: 2024-06-29
 """
 
 import os
