@@ -9,7 +9,8 @@ interface MapState {
   isLoading: boolean;
   isFullPageLoading: boolean;
   fullPageLoadingMessage: string;
-  availableListings: any[];
+  availableListings: any[]; // 後端返回的原始房屋列表
+  filteredListings: any[]; // 經過等時線篩選的房屋列表
 
   // Actions
   setWorkLocation: (location: Coordinates | null) => void;
@@ -19,6 +20,7 @@ interface MapState {
   setIsLoading: (loading: boolean) => void;
   setFullPageLoading: (loading: boolean, message?: string) => void;
   setAvailableListings: (listings: any[]) => void;
+  setFilteredListings: (listings: any[]) => void;
   reset: () => void;
 }
 
@@ -31,6 +33,7 @@ const initialState = {
   isFullPageLoading: false,
   fullPageLoadingMessage: "",
   availableListings: [],
+  filteredListings: [],
 };
 
 export const useMapStore = create<MapState>((set) => ({
@@ -46,5 +49,6 @@ export const useMapStore = create<MapState>((set) => ({
     fullPageLoadingMessage: message 
   }),
   setAvailableListings: (listings) => set({ availableListings: listings }),
+  setFilteredListings: (listings) => set({ filteredListings: listings }),
   reset: () => set(initialState),
 })); 

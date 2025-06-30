@@ -11,7 +11,8 @@
     "test": "jest",
     "migrate": "prisma migrate dev",
     "seed": "ts-node src/utils/seed.ts",
-    "import": "ts-node scripts/import-listings.ts"
+    "import": "ts-node scripts/import-listings.ts",
+    "cache:maintenance": "ts-node scripts/cacheMaintenance.ts"
   },
   "dependencies": {
     "@prisma/client": "^5.3.1",

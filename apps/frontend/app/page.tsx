@@ -78,7 +78,7 @@ export default function Home() {
         </div>
 
         {/* 地圖區域 */}
-        <div className={`col-span-12 md:col-span-8 lg:col-span-9 min-h-screen h-full lg:min-h-0 lg:h-auto transition-opacity duration-500 ${mapLoaded ? 'opacity-100' : 'opacity-0'}`}>
+        <div className={`col-span-12 md:col-span-8 lg:col-span-9 min-h-screen-h-0 lg:h-auto transition-opacity duration-500 ${mapLoaded ? 'opacity-100' : 'opacity-0'}`}>
           <Map />
         </div>
       </div>

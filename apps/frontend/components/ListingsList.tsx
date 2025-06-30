@@ -41,7 +41,7 @@ const ListingItem: FC<{ listing: ListingBasic }> = ({ listing }) => {
 };
 
 const ListingsList: FC = () => {
-  const { availableListings, isLoading, workLocation } = useMapStore();
+  const { availableListings, filteredListings, isLoading, workLocation } = useMapStore();
 
   if (isLoading) {
     return (
@@ -79,7 +79,7 @@ const ListingsList: FC = () => {
     );
   }
 
-  if (availableListings.length === 0) {
+  if (filteredListings.length === 0) {
     return (
       <div className="p-4 text-center text-gray-600">
         找不到符合條件的租屋物件，請嘗試調整搜尋條件或增加通勤時間上限
@@ -88,12 +88,12 @@ const ListingsList: FC = () => {
   }
 
   // 依照價格排序
-  const sortedListings = [...availableListings].sort((a, b) => a.price - b.price);
+  const sortedListings = [...filteredListings].sort((a, b) => a.price - b.price);
 
   return (
     <div className="p-4">
       <div className="mb-4 text-gray-700 font-medium">
-        篩選結果：{availableListings.length} 個租屋物件
+        篩選結果：{filteredListings.length} 個租屋物件
       </div>
       <div className="grid grid-cols-1 gap-4">
         {sortedListings.map((listing: ListingBasic) => (

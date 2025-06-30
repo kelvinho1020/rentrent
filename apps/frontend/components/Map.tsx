@@ -88,6 +88,7 @@ export default function Map() {
     setIsochromePolygon,
     setIsLoading,
     setFullPageLoading,
+    setFilteredListings,
   } = useMapStore();
 
   // 初始化地圖
@@ -276,7 +277,9 @@ export default function Map() {
     markers.current.slice(1).forEach((marker) => marker.remove());
     markers.current = markers.current.slice(0, 1);
     
-    // 過濾等時線範圍內的房屋
+    // 🎯 雙重篩選策略：
+    // 1. 後端已用直線距離預篩選，減少API調用
+    // 2. 前端再用等時線範圍篩選，確保只顯示圈圈內的房屋
     const filteredListings = availableListings.filter((listing: ListingBasic) => {
       // 如果沒有等時線多邊形，顯示所有房屋
       if (!isochromePolygon) {
@@ -288,7 +291,11 @@ export default function Map() {
       return isPointInIsochrone(point, isochromePolygon);
     });
     
-    console.log(`等時線過濾：${filteredListings.length}/${availableListings.length} 筆房屋在範圍內`);
+    console.log(`🔍 搜尋結果：後端返回 ${availableListings.length} 筆房屋`);
+    console.log(`🎯 等時線篩選：${filteredListings.length} 筆在圈圈範圍內`);
+    
+    // 🔄 同步更新 store 中的篩選結果，讓其他組件使用相同的資料
+    setFilteredListings(filteredListings);
     
     // 添加租屋物件標記
     filteredListings.forEach((listing: ListingBasic) => {

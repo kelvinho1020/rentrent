@@ -1,16 +1,9 @@
 import { Request, Response } from 'express';
 import { StatusCodes } from 'http-status-codes';
-import { PrismaClient } from '@prisma/client';
 import { logger } from '../utils/logger';
 import { getIsochroneData } from '../services/mapService';
-import { calculateDirectDistance, findListingsByCommuteTime } from '../services/commuteService';
+import { findListingsByCommuteTime } from '../services/commuteService';
 import { getDistanceMatrix } from '../services/mapService';
-
-// 增加重試次數和錯誤處理
-const prisma = new PrismaClient({
-  log: ['query', 'error', 'warn'],
-  errorFormat: 'pretty',
-});
 
 export class CommuteController {
   /**
@@ -116,9 +109,30 @@ export class CommuteController {
           filter,
         });
 
+        // 計算快取統計
+        const cachedCount = listings.filter(l => l.from_cache).length;
+        const calculatedCount = listings.length - cachedCount;
+
+        // 在 console 中顯示快取狀態
+        console.log(`🔍 通勤搜尋結果: 共 ${listings.length} 筆`);
+        console.log(`📋 快取命中: ${cachedCount} 筆 (來源: 資料庫快取)`);
+        console.log(`🔄 重新計算: ${calculatedCount} 筆 (來源: Google Maps API)`);
+        console.log(`⚡ 快取命中率: ${listings.length > 0 ? (cachedCount / listings.length * 100).toFixed(1) : 0}%`);
+        console.log(`📍 原始目的地: ${destString}`);
+        console.log(`🎯 交通方式: ${transit_mode}, 最大時間: ${max_commute_time}分鐘`);
+        
+        if (calculatedCount > 0) {
+          console.log(`🌐 本次 Google Maps API 調用次數: ${Math.ceil(calculatedCount / 20)} 次 (批次大小: 20)`);
+        }
+
         res.status(StatusCodes.OK).json({
           total: listings.length,
           results: listings,
+          cache_stats: {
+            cached_count: cachedCount,
+            calculated_count: calculatedCount,
+            cache_hit_rate: listings.length > 0 ? (cachedCount / listings.length * 100).toFixed(1) + '%' : '0%'
+          },
           note: '使用 Google Maps API 計算真實通勤時間'
         });
       } catch (serviceError) {

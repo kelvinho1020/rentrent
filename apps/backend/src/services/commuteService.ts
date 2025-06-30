@@ -40,6 +40,7 @@ interface ListingWithCommuteTime {
   coordinates: [number, number]; // [lng, lat]
   commute_time: number; // 通勤時間（分鐘）
   commute_distance?: number; // 通勤距離（公里）
+  from_cache?: boolean; // 是否來自快取
 }
 
 /**
@@ -63,12 +64,18 @@ export async function findListingsByCommuteTime(
   logger.info('開始搜尋符合通勤時間的租屋物件', params);
 
   try {
-    // 解析目的地座標
-    const [destLat, destLng] = params.destination.split(',').map(Number);
-    
-    if (isNaN(destLat) || isNaN(destLng)) {
-      throw new Error('目的地座標格式無效');
-    }
+      // 解析目的地座標
+  const [destLat, destLng] = params.destination.split(',').map(Number);
+  
+  if (isNaN(destLat) || isNaN(destLng)) {
+    throw new Error('目的地座標格式無效');
+  }
+
+  // 標準化座標格式 (量化到0.003精度，約300公尺)
+  const quantizedLat = Math.round(destLat / 0.003) * 0.003;
+  const quantizedLng = Math.round(destLng / 0.003) * 0.003;
+  const standardizedDestination = `${quantizedLat.toFixed(3)},${quantizedLng.toFixed(3)}`;
+  logger.info(`座標標準化: ${params.destination} -> ${standardizedDestination}`);
 
     // 構建資料庫查詢條件
     const where: any = { isActive: true };
@@ -97,7 +104,7 @@ export async function findListingsByCommuteTime(
         latitude: true,
         commuteTimes: {
           where: {
-            destination: params.destination,
+            destination: standardizedDestination,
             transitMode: params.transitMode,
           },
           select: {
@@ -131,9 +138,13 @@ export async function findListingsByCommuteTime(
     const calculatedListings = [];
 
     // 第一輪：處理已有通勤時間的物件
+    let cacheHitCount = 0;
     for (const listing of listings) {
       if (listing.commuteTimes.length > 0) {
+        cacheHitCount++;
         const commuteInfo = listing.commuteTimes[0];
+        logger.debug(`📋 快取命中: ${listing.id} (${listing.title}) -> ${commuteInfo.commuteTime}分鐘`);
+        
         // 檢查通勤時間是否符合要求
         if (commuteInfo.commuteTime <= params.maxCommuteTime) {
           calculatedListings.push({
@@ -147,6 +158,7 @@ export async function findListingsByCommuteTime(
             coordinates: [listing.longitude, listing.latitude] as [number, number],
             commute_time: commuteInfo.commuteTime,
             commute_distance: commuteInfo.commuteDistance || undefined,
+            from_cache: true, // 標記為來自快取
           });
         }
       } else {
@@ -154,6 +166,8 @@ export async function findListingsByCommuteTime(
         listingsToCalculate.push(listing);
       }
     }
+    
+    logger.info(`📊 快取查詢結果: ${cacheHitCount}/${listings.length} 筆有快取，${listingsToCalculate.length} 筆需重新計算`);
 
     // 第二輪：計算通勤時間
     if (listingsToCalculate.length > 0) {
@@ -197,23 +211,25 @@ export async function findListingsByCommuteTime(
                     coordinates: [listing.longitude, listing.latitude] as [number, number],
                     commute_time: commuteTimeMinutes,
                     commute_distance: commuteDistanceKm,
+                    from_cache: false, // 標記為新計算
                   });
                 }
               
-                // 儲存通勤時間到資料庫，以便下次使用
+                // 儲存通勤時間到資料庫，以便下次使用 (使用標準化座標)
                 try {
                   await prisma.commuteTime.create({
                     data: {
                       originId: listing.id,
-                      destination: params.destination,
+                      destination: standardizedDestination,
                       transitMode: params.transitMode,
                       commuteTime: commuteTimeMinutes,
                       commuteDistance: commuteDistanceKm,
                       calculatedAt: new Date(),
                     },
                   });
+                  logger.debug(`✅ 快取儲存成功: ${listing.id} -> ${standardizedDestination}`);
                 } catch (error) {
-                  logger.warn(`無法儲存通勤時間: ${listing.id} -> ${params.destination}`, { error });
+                  logger.warn(`❌ 無法儲存通勤時間: ${listing.id} -> ${standardizedDestination}`, { error });
                   // 繼續處理，不中斷流程
                 }
               }

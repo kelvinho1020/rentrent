@@ -112,7 +112,8 @@ def stable_dual_city_crawl():
                         print(f"\n🏠 處理第 {i+1}/{len(house_urls)} 個房屋...")
                         
                         try:
-                            house_data = crawl_house_details(browser, house_url)
+                            # 🎯 傳遞正確的地區名稱給爬蟲函數
+                            house_data = crawl_house_details(browser, house_url, region_name)
                             if house_data:
                                 region_data.append(house_data)
                                 page_processed += 1

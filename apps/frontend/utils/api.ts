@@ -5,8 +5,8 @@ import mockListingsRaw from "@/data/mockListings.json";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
 
-// 是否使用假資料的環境變數，強制使用假資料模式以節省API配額
-const USE_MOCK_DATA = process.env.NEXT_PUBLIC_USE_MOCK_DATA !== "false";
+// 強制使用假資料模式以確保城市顯示正確
+const USE_MOCK_DATA = true; // 修改：強制為 true
 
 // 新增：混合模式 - 假房屋資料 + 真實 Google Maps API
 const USE_REAL_COMMUTE_API = process.env.NEXT_PUBLIC_USE_REAL_COMMUTE_API === "true";
@@ -63,10 +63,84 @@ export const searchByCommuteTime = async (params: CommuteSearchRequest): Promise
     return await searchWithMockCommute(params, mockListings);
   }
 
-  // 原有的真實 API 調用
-  console.log("🌐 使用真實 API 調用");
-  const response = await api.post("/commute/search", params);
-  return response.data;
+  // 🚀 使用新的智能快取API (替換舊的 /commute/search)
+  console.log("🌐 使用智能快取 API 調用");
+  console.log("📍 搜尋參數:", {
+    目的地: `${params.work_location.latitude}, ${params.work_location.longitude}`,
+    最大通勤時間: params.max_commute_time,
+    交通方式: params.transit_mode || 'transit',
+    最大距離: params.max_distance || 15,
+    價格範圍: `${params.min_price || '不限'} - ${params.max_price || '不限'}`,
+    坪數下限: params.min_size || '不限',
+    城市: params.city || '不限',
+    行政區: params.district || '不限'
+  });
+
+  try {
+    // 調用新的智能快取API
+    const response = await api.post("/smart-commute/search", {
+      lat: params.work_location.latitude,
+      lng: params.work_location.longitude,
+      mode: params.transit_mode || 'transit',
+      maxTime: params.max_commute_time,
+      radius: params.max_distance || 15,
+    });
+
+    // 處理新API的回應格式
+    if (response.data && response.data.success && response.data.data) {
+      const { listings, cache_stats, meta } = response.data.data;
+      
+      // 在前端 console 顯示快取狀態
+      console.log("🔍 智能快取搜尋結果:", {
+        總數: listings.length,
+        快取命中: cache_stats.cached_count,
+        重新計算: cache_stats.calculated_count,
+        快取命中率: cache_stats.cache_hit_rate,
+        處理時間: meta.processingTime,
+      });
+
+      // 過濾基本條件 (價格、坪數、地區等)
+      let filteredListings = listings.filter((listing: any) => {
+        const conditions = {
+          最低價格: !params.min_price || listing.price >= params.min_price,
+          最高價格: !params.max_price || listing.price <= params.max_price,
+          最小坪數: !params.min_size || listing.size_ping >= params.min_size,
+          城市匹配: !params.city || listing.city === params.city,
+          行政區匹配: !params.district || listing.district === params.district,
+        };
+        return Object.values(conditions).every(Boolean);
+      });
+
+      console.log(`📊 基本條件篩選: ${filteredListings.length}/${listings.length} 筆符合`);
+
+      return {
+        total: filteredListings.length,
+        results: filteredListings,
+        cache_stats: cache_stats, // 傳遞快取統計給前端
+        note: `智能快取系統 (${params.transit_mode || 'transit'}模式) - 處理時間: ${meta.processingTime}`
+      };
+    }
+
+    // API回應格式異常
+    throw new Error('API回應格式異常');
+
+  } catch (error) {
+    console.error("❌ 智能快取API調用失敗:", error);
+    
+    // 💡 回退到舊API系統
+    console.log("🔄 回退到舊API系統...");
+    try {
+      const fallbackResponse = await api.post("/commute/search", params);
+      console.log("✅ 舊API系統調用成功");
+      return {
+        ...fallbackResponse.data,
+        note: `回退到舊系統 (${params.transit_mode || 'driving'}模式) - 智能快取系統暫時不可用`
+      };
+    } catch (fallbackError) {
+      console.error("❌ 舊API系統也失敗:", fallbackError);
+      throw new Error('所有通勤搜尋系統都不可用，請稍後再試');
+    }
+  }
 };
 
 /**

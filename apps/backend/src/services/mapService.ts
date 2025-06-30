@@ -11,6 +11,38 @@ if (!GOOGLE_MAPS_API_KEY) {
   logger.warn('GOOGLE_MAPS_API_KEY 環境變數未設置！');
 }
 
+/**
+ * 座標標準化：四捨五入到指定精度，提高快取命中率
+ * @param coordinate 座標值
+ * @param precision 精度位數 (2 = 約1公里, 3 = 約100公尺, 4 = 約10公尺)
+ */
+function normalizeCoordinate(coordinate: number, precision: number = 2): number {
+  return Math.round(coordinate * Math.pow(10, precision)) / Math.pow(10, precision);
+}
+
+/**
+ * 標準化座標字串，用於快取 key
+ * @param coordString 座標字串 "lat,lng" 或 "lat1,lng1|lat2,lng2"
+ */
+function normalizeCoordinateString(coordString: string): string {
+  // 處理批量座標 (用 | 分隔)
+  if (coordString.includes('|')) {
+    return coordString.split('|')
+      .map(coord => {
+        const [lat, lng] = coord.split(',').map(Number);
+        if (isNaN(lat) || isNaN(lng)) return coord; // 如果不是座標格式，保持原樣
+        return `${normalizeCoordinate(lat)},${normalizeCoordinate(lng)}`;
+      })
+      .join('|');
+  }
+  
+  // 處理單一座標
+  const [lat, lng] = coordString.split(',').map(Number);
+  if (isNaN(lat) || isNaN(lng)) return coordString; // 如果不是座標格式，保持原樣
+  
+  return `${normalizeCoordinate(lat)},${normalizeCoordinate(lng)}`;
+}
+
 interface DistanceMatrixResponse {
   status: string;
   rows: {
@@ -50,21 +82,26 @@ export async function getDistanceMatrix(
     // 檢查是否為批量請求（包含 | 符號）
     const isBatchRequest = origin.includes('|');
     
+    // 🎯 標準化座標，提高快取命中率
+    const normalizedOrigin = normalizeCoordinateString(origin);
+    const normalizedDestination = normalizeCoordinateString(destination);
+    
     // 創建緩存鍵
-    const cacheKey = `distance_matrix:${origin}:${destination}:${mode}`;
+    const cacheKey = `distance_matrix:${normalizedOrigin}:${normalizedDestination}:${mode}`;
 
     // 檢查緩存
     const cachedData = await redisClient.get(cacheKey);
     if (cachedData) {
-      logger.debug('使用緩存的距離矩陣數據');
+      logger.debug('使用緩存的距離矩陣數據', { 
+        originalKey: `${origin}:${destination}:${mode}`,
+        normalizedKey: `${normalizedOrigin}:${normalizedDestination}:${mode}`
+      });
       return JSON.parse(cachedData);
     }
 
-    // 開發環境或測試環境下使用模擬數據
-    if ((process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test') 
-        && !GOOGLE_MAPS_API_KEY.startsWith('AIza')) {
-      logger.info('開發環境：使用模擬距離矩陣數據');
-      return generateMockDistanceMatrix(origin, destination, mode);
+    // 檢查 API Key 是否存在
+    if (!GOOGLE_MAPS_API_KEY || GOOGLE_MAPS_API_KEY === 'your_google_maps_api_key_here') {
+      throw new Error('Google Maps API Key 未設定');
     }
 
     // 使用 Google Maps API
@@ -312,20 +349,32 @@ function calculateDistance(coords1: [number, number], coords2: [number, number])
 export async function getIsochroneData(params: IsochroneParams): Promise<any> {
   const { location, minutes, mode, maxDistance = 5 } = params; // 解構maxDistance參數
   
+  // 🎯 標準化座標，提高快取命中率
+  const normalizedLng = normalizeCoordinate(location[0]);
+  const normalizedLat = normalizeCoordinate(location[1]);
+  
+  // 創建緩存鍵（包含maxDistance）
+  const cacheKey = `isochrone:${normalizedLng},${normalizedLat}:${minutes}:${mode}:${maxDistance}`;
+  
   try {
-    // 創建緩存鍵（包含maxDistance）
-    const cacheKey = `isochrone:${location[0]},${location[1]}:${minutes}:${mode}:${maxDistance}`;
 
     // 檢查緩存
     const cachedData = await redisClient.get(cacheKey);
     if (cachedData) {
+      logger.debug('使用緩存的等時線資料', { 
+        originalLocation: `${location[0]},${location[1]}`,
+        normalizedLocation: `${normalizedLng},${normalizedLat}`,
+        cacheKey
+      });
       return JSON.parse(cachedData);
     }
 
     // 開發環境下直接使用備用方法生成圓形等時線
     if (process.env.NODE_ENV === 'development' || !process.env.ORS_API_KEY) {
       logger.info('使用模擬等時線數據');
-      return generateFallbackIsochrone(location, minutes, maxDistance); // 傳入maxDistance
+      const fallbackData = generateFallbackIsochrone([normalizedLng, normalizedLat], minutes, maxDistance);
+      await redisClient.setex(cacheKey, CACHE_EXPIRY, JSON.stringify(fallbackData));
+      return fallbackData;
     }
 
     // 嘗試使用第三方 API
@@ -357,13 +406,17 @@ export async function getIsochroneData(params: IsochroneParams): Promise<any> {
       return response.data;
     } catch (apiError) {
       logger.error('第三方等時線 API 請求失敗', { error: apiError });
-      // 如果 API 調用失敗，使用備用方法
-      return generateFallbackIsochrone(location, minutes, maxDistance); // 傳入maxDistance
+      // 如果 API 調用失敗，使用備用方法生成並快取
+      const fallbackData = generateFallbackIsochrone([normalizedLng, normalizedLat], minutes, maxDistance);
+      await redisClient.setex(cacheKey, CACHE_EXPIRY, JSON.stringify(fallbackData));
+      return fallbackData;
     }
   } catch (error) {
     logger.error('獲取等時線數據失敗', { error, location, minutes, mode });
     // 如果原始 API 失敗，返回一個簡單的圓形等時線
-    return generateFallbackIsochrone(location, minutes, maxDistance); // 傳入maxDistance
+    const fallbackData = generateFallbackIsochrone([normalizedLng, normalizedLat], minutes, maxDistance);
+    await redisClient.setex(cacheKey, CACHE_EXPIRY, JSON.stringify(fallbackData));
+    return fallbackData;
   }
 }
 

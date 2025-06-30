@@ -288,56 +288,31 @@ def crawl_house_details(browser, house_url, target_region=None):
                 print(f"❌ 無法獲取房屋名稱，跳過此房屋")
                 return None
         
-        # 爬取價格 - 直接從頁面源碼搜尋，最可靠的方法
+        # 爬取價格 - 直接用CSS選擇器抓取價格元素
         price = "0"
         
         try:
-            page_source = browser.page_source
-            import re
+            # 直接抓取價格顯示元素
+            price_element = browser.find_element(By.CSS_SELECTOR, "span.text-3xl.font-bold.text-c-orange-700")
+            price_text = price_element.text.strip()
             
-            # 尋找所有價格模式，按優先級排序
-            price_patterns = [
-                r'(\d{1,3}(?:,\d{3})*)\s*元/月',  # 標準格式：12,000元/月
-                r'(\d{1,3}(?:,\d{3})*)\s*元',     # 簡單格式：12,000元
-                r'租金[：:]\s*(\d{1,3}(?:,\d{3})*)', # 租金：12000
-                r'月租[：:]\s*(\d{1,3}(?:,\d{3})*)', # 月租：12000
-            ]
-            
-            for pattern in price_patterns:
-                matches = re.findall(pattern, page_source)
-                if matches:
-                    # 找到數字，取最大的（通常是正確的租金）
-                    prices = [int(match.replace(',', '')) for match in matches]
-                    max_price = max(prices)
-                    if max_price >= 5000:  # 合理的租金範圍
-                        price = str(max_price)
-                        print(f"價格: {price} (從模式 '{pattern}' 找到)")
-                        break
-            
-            # 如果還是沒找到，搜尋更寬泛的數字模式
-            if price == "0":
-                all_numbers = re.findall(r'(\d{1,3}(?:,\d{3})*)', page_source)
-                candidate_prices = []
-                for num_str in all_numbers:
-                    num = int(num_str.replace(',', ''))
-                    # 合理的租金範圍：5000-200000
-                    if 5000 <= num <= 200000:
-                        candidate_prices.append(num)
+            if price_text:
+                # 清理價格文字，移除逗號
+                clean_price = price_text.replace(',', '')
+                if clean_price.isdigit():
+                    price_num = int(clean_price)
+                    if 1000 <= price_num <= 500000:  # 合理租金範圍
+                        price = str(price_num)
+                        print(f"價格: {price} (CSS選擇器抓取)")
+                    else:
+                        print(f"⚠️  價格超出合理範圍: {price_num}")
+                else:
+                    print(f"⚠️  價格格式錯誤: {price_text}")
+            else:
+                print("⚠️  價格元素為空")
                 
-                if candidate_prices:
-                    # 取出現頻率最高的價格，或者最大的價格
-                    from collections import Counter
-                    counter = Counter(candidate_prices)
-                    if counter:
-                        price = str(counter.most_common(1)[0][0])
-                        print(f"價格: {price} (候選價格中最常見的)")
-            
-            if price == "0":
-                print(f"⚠️  無法獲取有效價格，使用預設值 0")
-                price = "0"
-                
-        except Exception as e:
-            print(f"⚠️  價格抓取異常: {e}，使用預設值 0")
+        except Exception as css_e:
+            print(f"⚠️  CSS選擇器抓取失敗: {css_e}，使用預設值 0")
             price = "0"
         
         house_data["price"] = price
@@ -796,24 +771,10 @@ def crawl_house_details(browser, house_url, target_region=None):
                 except Exception as content_e:
                     print(f"   頁面內容搜尋失敗: {content_e}")
             
-            # 方法3: 從地址中提取地區
-            if not district and house_data.get("address"):
-                print("   嘗試從地址提取地區...")
-                try:
-                    address = house_data["address"]
-                    # 使用正則表達式從地址中提取行政區
-                    district_match = re.search(r'(台北市|新北市|桃園市|基隆市|新竹市|新竹縣)([^市縣]*區)', address)
-                    if district_match:
-                        city = district_match.group(1)
-                        district = district_match.group(2)
-                        print(f"   ✅ 從地址提取到: {city} {district}")
-                        
-                except Exception as addr_e:
-                    print(f"   從地址提取失敗: {addr_e}")
-            
             # 保存地區信息
             house_data["district"] = district or "未知"
-            house_data["city"] = target_region or house_data.get("detected_city", "未知")
+            house_data["city"] = target_region or "未知"
+            house_data["detected_city"] = target_region or "未知"
             
             if district:
                 print(f"✅ 成功抓取地區信息: {house_data['city']} {house_data['district']}")
@@ -862,8 +823,8 @@ def save_data_incrementally(house_data):
 
 def crawl_5168_all_regions():
     """爬取租屋網站，收集所有地區的資料"""
-    # 初始化數據文件
-    json_file_path = os.path.join(DATA_FOLDER, "data.json")
+    # 初始化數據文件 - 統一使用 houseprice_all_data.json
+    json_file_path = os.path.join(DATA_FOLDER, "houseprice_all_data.json")
     try:
         with open(json_file_path, 'w', encoding='utf-8') as f:
             json.dump([], f, ensure_ascii=False, indent=2)
@@ -933,8 +894,8 @@ def crawl_5168_all_regions():
             for city, count in sorted(city_stats.items(), key=lambda x: x[1], reverse=True):
                 print(f"   {city}: {count} 筆")
             
-            # 保存所有收集的數據到JSON文件
-            json_file_path = os.path.join(DATA_FOLDER, "data.json")
+            # 保存所有收集的數據到JSON文件 - 統一使用 houseprice_all_data.json
+            json_file_path = os.path.join(DATA_FOLDER, "houseprice_all_data.json")
             with open(json_file_path, 'w', encoding='utf-8') as f:
                 json.dump(all_house_data, f, ensure_ascii=False, indent=2)
             print(f"\n=== 總計收集到 {len(all_house_data)} 個房屋資訊，已保存到 {json_file_path} ===")

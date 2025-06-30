@@ -34,10 +34,18 @@ export interface ListingDetail extends ListingBasic {
   created_at?: string;
 }
 
+// 快取統計資訊
+export interface CacheStats {
+  cached_count: number;
+  calculated_count: number;
+  cache_hit_rate: string;
+}
+
 // 搜尋結果
 export interface SearchResponse {
   total: number;
   results: ListingBasic[];
+  cache_stats?: CacheStats; // 新增：快取統計資訊
   note?: string; // 新增：備註說明，例如使用直線距離搜尋的備註
 }
 

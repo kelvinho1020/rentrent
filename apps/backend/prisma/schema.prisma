@@ -8,35 +8,36 @@ datasource db {
 }
 
 model Listing {
-  id           Int           @id @default(autoincrement())
-  sourceId     String        @map("source_id")
+  id           Int            @id @default(autoincrement())
+  sourceId     String         @map("source_id")
   title        String
   price        Int
-  sizePing     Float         @map("size_ping")
-  sizeDetail   String?       @map("size_detail")
-  houseType    String?       @map("house_type")
-  roomType     String?       @map("room_type")
-  roomLayout   String?       @map("room_layout")
-  parking      String?       @map("parking")
+  sizePing     Float          @map("size_ping")
+  houseType    String?        @map("house_type")
+  roomType     String?        @map("room_type")
   address      String
   district     String
   city         String
   description  String?
-  imageUrls    String[]      @map("image_urls")
-  facilities   String[]      @default([])
-  contactName  String?       @map("contact_name")
-  contactPhone String?       @map("contact_phone")
+  imageUrls    String[]       @map("image_urls")
+  facilities   String[]       @default([])
+  contactName  String?        @map("contact_name")
+  contactPhone String?        @map("contact_phone")
   floor        Int?
-  totalFloor   Int?          @map("total_floor")
-  floorInfo    String?       @map("floor_info")
-  lastUpdated  DateTime      @map("last_updated")
-  createdAt    DateTime      @default(now()) @map("created_at")
-  updatedAt    DateTime      @updatedAt @map("updated_at")
+  totalFloor   Int?           @map("total_floor")
+  lastUpdated  DateTime       @map("last_updated")
+  createdAt    DateTime       @default(now()) @map("created_at")
+  updatedAt    DateTime       @updatedAt @map("updated_at")
   longitude    Float
   latitude     Float
-  isActive     Boolean       @default(true) @map("is_active")
-  source       String        @default("591")
+  isActive     Boolean        @default(true) @map("is_active")
+  source       String         @default("591")
   url          String?
+  floorInfo    String?        @map("floor_info")
+  parking      String?        @map("parking")
+  roomLayout   String?        @map("room_layout")
+  sizeDetail   String?        @map("size_detail")
+  commuteCache CommuteCache[]
   commuteTimes CommuteTime[]
 
   @@unique([sourceId, source])
@@ -61,4 +62,18 @@ model CommuteTime {
   @@map("commute_times")
 }
 
+model CommuteCache {
+  id              Int      @id @default(autoincrement())
+  destinationHash String   @map("destination_hash")
+  listingId       Int      @map("listing_id")
+  durationMinutes Int      @map("duration_minutes")
+  distanceKm      Float?   @map("distance_km")
+  updatedAt       DateTime @default(now()) @updatedAt @map("updated_at")
+  listing         Listing  @relation(fields: [listingId], references: [id])
 
+  @@unique([listingId, destinationHash], name: "unique_listing_destination_cache")
+  @@index([destinationHash])
+  @@index([durationMinutes])
+  @@index([destinationHash, durationMinutes])
+  @@map("commute_cache")
+}
