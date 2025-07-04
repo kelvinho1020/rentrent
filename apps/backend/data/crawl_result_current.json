@@ -1,44 +1,44 @@
 [
   {
-    "url": "https://rent.houseprice.tw/house/1223830_1420474",
-    "title": "中和積穗國小-大套房",
-    "price": "18500",
-    "address": "新北市中和區民利街租金18500元/月",
-    "size": "8",
-    "size_detail": "使用8坪、權狀24.13坪",
-    "room_layout": "1房1廳1衛",
-    "floor_info": "1/5樓",
-    "house_type": "獨立套房 (公寓)",
+    "url": "https://rent.houseprice.tw/house/1249856_1884806",
+    "title": "A9扶輪公園長耀雙峰匯3房車",
+    "price": "45000",
+    "address": "新北市林口區忠孝路租金45000元/月",
+    "size": "27.79",
+    "size_detail": "使用27.79坪、權狀48.05坪",
+    "room_layout": "3房2廳2衛",
+    "floor_info": "5/29樓",
+    "house_type": "整層住家 (大樓)",
     "parking": "無車位",
     "images": [
-      "https://image.houseprice.tw/p1-hpimage/Mzk1MTM3NWhwaW1hZ2U,/19f6250fa5e24a7f_1108x1477.jpg",
-      "https://image.houseprice.tw/p1-hpimage/Mzk1MTM3MmhwaW1hZ2U,/767743a6b5fa491c_1108x1477.jpg"
+      "https://image.houseprice.tw/p1-hpimage/NDg1ODI4MmhwaW1hZ2U,/bab2721c3ac147c5_1477x1108.jpg",
+      "https://image.houseprice.tw/p1-hpimage/NDg4MjIwMmhwaW1hZ2U,/a980916306a24f09_1477x1108.jpg"
     ],
-    "latitude": 24.9983100891113,
-    "longitude": 121.479644775391,
+    "latitude": 25.074031829834,
+    "longitude": 121.366828918457,
     "detected_city": "新北市",
-    "district": "中和區",
+    "district": "林口區",
     "city": "新北市"
   },
   {
-    "url": "https://rent.houseprice.tw/house/1223830_1420474",
-    "title": "中和積穗國小-大套房",
-    "price": "18500",
-    "address": "新北市中和區民利街租金18500元/月",
-    "size": "8",
-    "size_detail": "使用8坪、權狀24.13坪",
-    "room_layout": "1房1廳1衛",
-    "floor_info": "1/5樓",
-    "house_type": "獨立套房 (公寓)",
+    "url": "https://rent.houseprice.tw/house/1249856_1884806",
+    "title": "A9扶輪公園長耀雙峰匯3房車",
+    "price": "45000",
+    "address": "新北市林口區忠孝路租金45000元/月",
+    "size": "27.79",
+    "size_detail": "使用27.79坪、權狀48.05坪",
+    "room_layout": "3房2廳2衛",
+    "floor_info": "5/29樓",
+    "house_type": "整層住家 (大樓)",
     "parking": "無車位",
     "images": [
-      "https://image.houseprice.tw/p1-hpimage/Mzk1MTM3NWhwaW1hZ2U,/19f6250fa5e24a7f_1108x1477.jpg",
-      "https://image.houseprice.tw/p1-hpimage/Mzk1MTM3MmhwaW1hZ2U,/767743a6b5fa491c_1108x1477.jpg"
+      "https://image.houseprice.tw/p1-hpimage/NDg1ODI4MmhwaW1hZ2U,/bab2721c3ac147c5_1477x1108.jpg",
+      "https://image.houseprice.tw/p1-hpimage/NDg4MjIwMmhwaW1hZ2U,/a980916306a24f09_1477x1108.jpg"
     ],
-    "latitude": 24.9983100891113,
-    "longitude": 121.479644775391,
+    "latitude": 25.074031829834,
+    "longitude": 121.366828918457,
     "detected_city": "台北市",
-    "district": "中和區",
+    "district": "林口區",
     "city": "台北市"
   }
 ]
