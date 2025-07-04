@@ -19,26 +19,5 @@
     "detected_city": "新北市",
     "district": "林口區",
     "city": "新北市"
-  },
-  {
-    "url": "https://rent.houseprice.tw/house/1249856_1884806",
-    "title": "A9扶輪公園長耀雙峰匯3房車",
-    "price": "45000",
-    "address": "新北市林口區忠孝路租金45000元/月",
-    "size": "27.79",
-    "size_detail": "使用27.79坪、權狀48.05坪",
-    "room_layout": "3房2廳2衛",
-    "floor_info": "5/29樓",
-    "house_type": "整層住家 (大樓)",
-    "parking": "無車位",
-    "images": [
-      "https://image.houseprice.tw/p1-hpimage/NDg1ODI4MmhwaW1hZ2U,/bab2721c3ac147c5_1477x1108.jpg",
-      "https://image.houseprice.tw/p1-hpimage/NDg4MjIwMmhwaW1hZ2U,/a980916306a24f09_1477x1108.jpg"
-    ],
-    "latitude": 25.074031829834,
-    "longitude": 121.366828918457,
-    "detected_city": "台北市",
-    "district": "林口區",
-    "city": "台北市"
   }
 ]
