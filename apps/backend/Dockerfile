@@ -8,6 +8,7 @@ COPY apps/backend/package.json ./apps/backend/
 RUN npm install -g pnpm@8.6.12 && pnpm install --frozen-lockfile
 
 COPY apps/backend ./apps/backend/
+COPY apps/backend ./apps/backend/
 
 WORKDIR /app/apps/backend
 RUN npx prisma generate
