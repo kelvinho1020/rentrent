@@ -8,10 +8,11 @@ services:
     ports:
       - "3000:3000"
     env_file:
-      - .env.production
+      - ./apps/frontend/.env
     environment:
       - NODE_ENV=production
-      - NEXT_PUBLIC_API_URL=http://${VPS_IP:-134.209.108.11}:8000/api
+      - NEXT_PUBLIC_API_URL=http://${VPS_IP:-134.209.108.11}:8000/api,
+      - PORT=3000
     depends_on:
       - backend
     restart: unless-stopped
@@ -27,11 +28,12 @@ services:
     ports:
       - "8000:8000"
     env_file:
-      - .env.production
+      - ./apps/backend/.env
     environment:
       - NODE_ENV=production
       - DATABASE_URL=postgresql://postgres:${POSTGRES_PASSWORD}@db:5432/rentrent?schema=public
-      - REDIS_URL=redis://redis:6379
+      - REDIS_URL=redis://:${REDIS_PASSWORD:-your_redis_password}@redis:6379
+      - PORT=8000
     depends_on:
       - db
       - redis
@@ -48,7 +50,8 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-your_secure_password}
       POSTGRES_DB: rentrent
     ports:
-      - "127.0.0.1:5432:5432"  # 只允許本地連接
+      # - "127.0.0.1:5432:5432"  # 只允許本地連接
+      - "5432:5432"  # 只允許本地連接
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./apps/backend/prisma/migrations:/docker-entrypoint-initdb.d
@@ -61,7 +64,8 @@ services:
     image: redis:7-alpine
     container_name: rentrent-redis-prod
     ports:
-      - "127.0.0.1:6379:6379"  # 只允許本地連接
+      - "6379:6379"
+      # - "127.0.0.1:6379:6379"  # 只允許本地連接
     volumes:
       - redis_data:/data
     command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-your_redis_password}

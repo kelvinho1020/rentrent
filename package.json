@@ -11,7 +11,8 @@
     "crawler": "sh scripts/run-crawler.sh",
     "crawler:docker": "sh scripts/run-docker-crawler.sh",
     "clean": "docker system prune -f && docker volume prune -f && docker builder prune -f",
-    "deploy": "sh scripts/deploy.sh"
+    "deploy": "sh scripts/deploy.sh",
+    "prod": "docker compose -f docker-compose.prod.yml up -d --build"
   },
   "engines": {
     "node": "20.10.0",
