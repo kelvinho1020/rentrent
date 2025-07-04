@@ -79,4 +79,8 @@ volumes:
 
 networks:
   rentrent-network:
+<<<<<<< HEAD
     driver: bridge 
+=======
+    driver: bridge 
+>>>>>>> eefa0e1 (fix: conflict)
