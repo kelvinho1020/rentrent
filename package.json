@@ -6,13 +6,17 @@
   "scripts": {
     "dev": "docker-compose up -d",
     "dev:build": "docker-compose up -d --build",
-    "stop": "docker-compose down",
+    "dev:stop": "docker-compose down",
+    "dev:logs": "docker-compose logs -f",
+    "prod": "docker-compose -f docker-compose.prod.yml up -d --build",
+    "prod:stop": "docker-compose -f docker-compose.prod.yml down",
+    "prod:logs": "docker-compose -f docker-compose.prod.yml logs -f",
+    "stop": "docker-compose down && docker-compose -f docker-compose.prod.yml down",
     "logs": "docker-compose logs -f",
     "crawler": "sh scripts/run-crawler.sh",
     "crawler:docker": "sh scripts/run-docker-crawler.sh",
     "clean": "docker system prune -f && docker volume prune -f && docker builder prune -f",
-    "deploy": "sh scripts/deploy.sh",
-    "prod": "docker compose -f docker-compose.prod.yml up -d --build"
+    "deploy": "sh scripts/deploy.sh"
   },
   "engines": {
     "node": "20.10.0",
