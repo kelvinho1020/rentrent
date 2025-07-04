@@ -4,35 +4,17 @@ import { getDistanceMatrix } from './mapService';
 
 const prisma = new PrismaClient();
 
-/**
- * 座標量化：控制精度，提高快取命中率
- * @param coordinate 座標值
- * @param precision 精度 (0.03 ≈ 3km, 0.01 ≈ 1km, 0.003 ≈ 300m)
- */
 function quantizeCoordinate(coordinate: number, precision: number = 0.003): number {
   return Math.round(coordinate / precision) * precision;
 }
 
-/**
- * 生成目的地雜湊值
- * @param lat 緯度
- * @param lng 經度  
- * @param mode 交通方式
- * @returns 雜湊字串 例如: "25.02,121.56:transit"
- */
 function generateDestinationHash(lat: number, lng: number, mode: string): string {
   const quantizedLat = quantizeCoordinate(lat, 0.003); // 約300公尺精度
   const quantizedLng = quantizeCoordinate(lng, 0.003);
   return `${quantizedLat.toFixed(3)},${quantizedLng.toFixed(3)}:${mode}`;
 }
 
-/**
- * 地理距離篩選：只處理可能範圍內的房屋
- * @param centerLat 中心緯度
- * @param centerLng 中心經度
- * @param radiusKm 半徑（公里）
- */
-async function findNearbyListings(centerLat: number, centerLng: number, radiusKm: number = 5) {
+async function findNearbyListings(centerLat: number, centerLng: number, radiusKm: number = 10) {
   // 簡單的經緯度範圍篩選（約略）
   const latRange = radiusKm / 111; // 1度緯度 ≈ 111km
   const lngRange = radiusKm / (111 * Math.cos((centerLat * Math.PI) / 180)); // 經度隨緯度變化
@@ -66,21 +48,16 @@ async function findNearbyListings(centerLat: number, centerLng: number, radiusKm
   return nearbyListings;
 }
 
-/**
- * 智能通勤搜尋服務 (優化版)
- * @param params 搜尋參數
- */
 export async function smartCommuteSearch(params: {
   destination: { lat: number; lng: number };
   mode: string;
   maxCommuteTime: number; // 分鐘
   radiusKm?: number;
 }) {
-  const { destination, mode, maxCommuteTime, radiusKm = 5 } = params;
+  const { destination, mode, maxCommuteTime, radiusKm = 10 } = params;
   
   logger.info(`🔍 智能通勤搜尋開始：目的地 (${destination.lat}, ${destination.lng}), 模式: ${mode}, 最大時間: ${maxCommuteTime}分鐘, 搜尋半徑: ${radiusKm}km`);
 
-  // 🎯 Step 1: 先進行地理距離篩選，只處理範圍內的房屋
   const nearbyListings = await findNearbyListings(destination.lat, destination.lng, radiusKm);
   logger.info(`🌍 地理篩選結果: 在 ${radiusKm}km 範圍內找到 ${nearbyListings.length} 間房屋`);
 
@@ -88,7 +65,6 @@ export async function smartCommuteSearch(params: {
     return [];
   }
 
-  // Step 2: 生成目的地雜湊並查詢快取
   const destinationHash = generateDestinationHash(destination.lat, destination.lng, mode);
   const nearbyListingIds = nearbyListings.map(listing => listing.id);
 
@@ -117,7 +93,6 @@ export async function smartCommuteSearch(params: {
 
   logger.info(`📋 快取命中: ${cachedResults.length} 筆記錄`);
 
-  // Step 3: 轉換快取結果
   const results = cachedResults.map((cache: any) => ({
     id: cache.listing.id,
     title: cache.listing.title,
@@ -132,7 +107,6 @@ export async function smartCommuteSearch(params: {
     from_cache: true,
   }));
 
-  // Step 4: 找出需要計算的房屋（範圍內但沒有快取的）
   const cachedListingIds = new Set(cachedResults.map((r: any) => r.listingId));
   const needCalculation = nearbyListings.filter(listing => !cachedListingIds.has(listing.id));
   
@@ -147,7 +121,6 @@ export async function smartCommuteSearch(params: {
         const batchListings = needCalculation.slice(i, i + batchSize);
         logger.info(`📊 處理第 ${Math.floor(i/batchSize) + 1} 批，共 ${batchListings.length} 間房屋`);
         
-        // 批次API請求
         const origins = batchListings.map(listing => `${listing.latitude},${listing.longitude}`);
         const destinationCoord = `${destination.lat},${destination.lng}`;
         
@@ -168,7 +141,6 @@ export async function smartCommuteSearch(params: {
               const durationMinutes = Math.ceil(element.duration.value / 60);
               const distanceKm = element.distance ? element.distance.value / 1000 : null;
               
-              // 快取所有結果
               cacheData.push({
                 listingId: listing.id,
                 destinationHash,
@@ -176,7 +148,6 @@ export async function smartCommuteSearch(params: {
                 distanceKm,
               });
               
-              // 如果符合時間條件，加入結果
               if (durationMinutes <= maxCommuteTime) {
                 results.push({
                   id: listing.id,
@@ -193,7 +164,6 @@ export async function smartCommuteSearch(params: {
                 });
               }
             } else {
-              // API失敗，記錄預設值
               cacheData.push({
                 listingId: listing.id,
                 destinationHash,

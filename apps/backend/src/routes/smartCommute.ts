@@ -18,7 +18,7 @@ const router = Router();
  *   "lng": 121.565,
  *   "mode": "transit",      // transit, driving, bicycling, walking
  *   "maxTime": 30,          // 最大通勤時間（分鐘）
- *   "radius": 15            // 搜尋半徑（公里）
+ *   "radius": 10            // 搜尋半徑（公里）
  * }
  */
 router.post('/search', searchByCommute);

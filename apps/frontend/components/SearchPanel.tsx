@@ -11,9 +11,9 @@ const commuteTimes = [
 ];
 
 const distanceOptions = [
-  { value: 2, label: "2 公里" },
   { value: 3, label: "3 公里" },
   { value: 5, label: "5 公里" },
+  { value: 10, label: "10 公里" },
 ];
 
 const SearchPanel: FC = () => {
@@ -38,7 +38,6 @@ const SearchPanel: FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [searchResult, setSearchResult] = useState<string | null>(null);
 
-  // 執行搜尋
   const handleSearch = async () => {
     if (!workLocation) {
       setError("請在地圖上選擇工作地點");
@@ -65,12 +64,10 @@ const SearchPanel: FC = () => {
       
       setAvailableListings(response.results);
       
-      // 顯示搜尋結果摘要 (實際顯示數量會由 filteredListings 的 useEffect 更新)
       let resultMessage = `找到 ${response.total} 筆符合條件的租屋物件`;
       
       setSearchResult(resultMessage);
       
-      // 如果有設定篩選條件，顯示更詳細的資訊
       const filterInfo = [];
       if (minPrice) filterInfo.push(`最低租金 ${minPrice.toLocaleString()}元`);
       if (maxPrice) filterInfo.push(`最高租金 ${maxPrice.toLocaleString()}元`);
@@ -91,7 +88,6 @@ const SearchPanel: FC = () => {
     }
   };
 
-  // 當篩選結果變化時，更新搜尋結果訊息
   useEffect(() => {
     if (filteredListings.length > 0) {
       const resultMessage = `找到 ${filteredListings.length} 筆符合條件的租屋物件（圈圈範圍內）`;
@@ -102,7 +98,6 @@ const SearchPanel: FC = () => {
     }
   }, [filteredListings, searchResult]);
 
-  // 處理 disabled 按鈕點擊
   const handleDisabledButtonClick = () => {
     if (!workLocation) {
       setError("請先在地圖上點選您的工作地點");

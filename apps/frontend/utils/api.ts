@@ -39,7 +39,7 @@ export const searchByCommuteTime = async (params: CommuteSearchRequest): Promise
       min_size,
       city,
       district,
-      max_distance = 5, // 預設5公里
+      max_distance = 10, // 預設10公里
       transit_mode = "driving"
     } = params;
 
@@ -155,7 +155,7 @@ async function searchWithRealCommuteAPI(params: CommuteSearchRequest, listings: 
     min_size,
     city,
     district,
-    max_distance = 5,
+    max_distance = 10,
     transit_mode = "driving"
   } = params;
 
@@ -275,7 +275,7 @@ async function searchWithMockCommute(params: CommuteSearchRequest, listings: Lis
     min_size,
     city,
     district,
-    max_distance = 5,
+    max_distance = 10,
     transit_mode = "driving"
   } = params;
 
@@ -377,7 +377,7 @@ export const getIsochrone = async (
   lat: number,
   lng: number,
   minutes: number,
-  maxDistance: number = 5, // 新增最大距離參數（公里）
+  maxDistance: number = 10, // 新增最大距離參數（公里）
   profile = "driving"
 ): Promise<any> => {
   const response = await api.get(`/commute/isochrone/${minutes}`, {

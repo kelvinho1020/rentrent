@@ -11,19 +11,10 @@ if (!GOOGLE_MAPS_API_KEY) {
   logger.warn('GOOGLE_MAPS_API_KEY 環境變數未設置！');
 }
 
-/**
- * 座標標準化：四捨五入到指定精度，提高快取命中率
- * @param coordinate 座標值
- * @param precision 精度位數 (2 = 約1公里, 3 = 約100公尺, 4 = 約10公尺)
- */
 function normalizeCoordinate(coordinate: number, precision: number = 2): number {
   return Math.round(coordinate * Math.pow(10, precision)) / Math.pow(10, precision);
 }
 
-/**
- * 標準化座標字串，用於快取 key
- * @param coordString 座標字串 "lat,lng" 或 "lat1,lng1|lat2,lng2"
- */
 function normalizeCoordinateString(coordString: string): string {
   // 處理批量座標 (用 | 分隔)
   if (coordString.includes('|')) {
@@ -67,12 +58,6 @@ interface IsochroneParams {
   maxDistance?: number; // 新增最大距離參數（公里）
 }
 
-/**
- * 獲取兩點間的距離矩陣
- * @param origin 起點（經緯度 lat,lng 或地址）可以是單一點或用 | 分隔的多個點
- * @param destination 終點（經緯度 lat,lng 或地址）
- * @param mode 交通方式（driving、transit、walking）
- */
 export async function getDistanceMatrix(
   origin: string,
   destination: string,
@@ -82,7 +67,6 @@ export async function getDistanceMatrix(
     // 檢查是否為批量請求（包含 | 符號）
     const isBatchRequest = origin.includes('|');
     
-    // 🎯 標準化座標，提高快取命中率
     const normalizedOrigin = normalizeCoordinateString(origin);
     const normalizedDestination = normalizeCoordinateString(destination);
     
@@ -135,10 +119,6 @@ export async function getDistanceMatrix(
   }
 }
 
-/**
- * 生成模擬的距離矩陣數據
- * 使用簡單的距離計算方法，僅供開發環境使用
- */
 function generateMockDistanceMatrix(origin: string, destination: string, mode = 'driving'): DistanceMatrixResponse {
   // 檢查是否為批量請求
   const originPoints = origin.split('|');
@@ -347,7 +327,7 @@ function calculateDistance(coords1: [number, number], coords2: [number, number])
  * @param params 等時線參數
  */
 export async function getIsochroneData(params: IsochroneParams): Promise<any> {
-  const { location, minutes, mode, maxDistance = 5 } = params; // 解構maxDistance參數
+  const { location, minutes, mode, maxDistance = 10 } = params; // 解構maxDistance參數
   
   // 🎯 標準化座標，提高快取命中率
   const normalizedLng = normalizeCoordinate(location[0]);
@@ -426,9 +406,9 @@ export async function getIsochroneData(params: IsochroneParams): Promise<any> {
  * @param minutes 分鐘數
  * @param maxDistance 最大距離（公里）
  */
-function generateFallbackIsochrone(center: [number, number], minutes: number, maxDistance: number = 5): any {
+function generateFallbackIsochrone(center: [number, number], minutes: number, maxDistance: number = 10): any {
   // 直接使用maxDistance作為半徑，但確保不超過合理範圍
-  let radiusKm = Math.min(maxDistance, 5); // 最大限制5公里
+  let radiusKm = Math.min(maxDistance, 10); // 最大限制10公里
 
   // 確保最小半徑為0.5公里
   radiusKm = Math.max(radiusKm, 0.5);

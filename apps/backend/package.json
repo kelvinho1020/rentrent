@@ -10,9 +10,16 @@
     "lint": "eslint src --ext .ts",
     "test": "jest",
     "migrate": "prisma migrate dev",
+    "migrate:deploy": "prisma migrate deploy",
+    "migrate:reset": "prisma migrate reset",
+    "migrate:diff": "prisma migrate diff",
+    "db:generate": "prisma generate",
+    "db:studio": "prisma studio",
+    "db:push": "prisma db push",
+    "db:pull": "prisma db pull",
+    "db:seed": "prisma db seed",
     "seed": "ts-node src/utils/seed.ts",
-    "import": "ts-node scripts/import-listings.ts",
-    "cache:maintenance": "ts-node scripts/cacheMaintenance.ts"
+    "import": "ts-node scripts/import-listings.ts"
   },
   "dependencies": {
     "@prisma/client": "^5.3.1",

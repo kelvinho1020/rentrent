@@ -172,7 +172,7 @@ export class CommuteController {
   public getIsochrone = async (req: Request, res: Response): Promise<void> => {
     try {
       const { minutes } = req.params;
-      const { location, lat, lng, transit_mode = "driving", max_distance = 5 } = req.query;
+      const { location, lat, lng, transit_mode = "driving", max_distance = 10 } = req.query;
 
       let coordinates: [number, number];
 

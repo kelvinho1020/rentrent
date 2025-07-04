@@ -27,7 +27,7 @@ interface MapState {
 const initialState = {
   workLocation: null,
   commuteTime: 30,
-  maxDistance: 5,
+  maxDistance: 10,
   isochromePolygon: null,
   isLoading: false,
   isFullPageLoading: false,

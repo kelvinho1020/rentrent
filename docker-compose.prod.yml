@@ -1,0 +1,78 @@
+services:
+  # 前端服務 (生產環境)
+  frontend:
+    build:
+      context: .
+      dockerfile: ./apps/frontend/Dockerfile
+    container_name: rentrent-frontend-prod
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env.production
+    environment:
+      - NODE_ENV=production
+      - NEXT_PUBLIC_API_URL=http://${VPS_IP:-134.209.108.11}:8000/api
+    depends_on:
+      - backend
+    restart: unless-stopped
+    networks:
+      - rentrent-network
+
+  # 後端服務 (生產環境)
+  backend:
+    build:
+      context: .
+      dockerfile: ./apps/backend/Dockerfile
+    container_name: rentrent-backend-prod
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env.production
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=postgresql://postgres:${POSTGRES_PASSWORD}@db:5432/rentrent?schema=public
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      - db
+      - redis
+    restart: unless-stopped
+    networks:
+      - rentrent-network
+
+  # PostgreSQL 資料庫 (生產環境)
+  db:
+    image: postgres:14
+    container_name: rentrent-db-prod
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-your_secure_password}
+      POSTGRES_DB: rentrent
+    ports:
+      - "127.0.0.1:5432:5432"  # 只允許本地連接
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./apps/backend/prisma/migrations:/docker-entrypoint-initdb.d
+    restart: unless-stopped
+    networks:
+      - rentrent-network
+
+  # Redis 緩存 (生產環境)
+  redis:
+    image: redis:7-alpine
+    container_name: rentrent-redis-prod
+    ports:
+      - "127.0.0.1:6379:6379"  # 只允許本地連接
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-your_redis_password}
+    restart: unless-stopped
+    networks:
+      - rentrent-network
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  rentrent-network:
+    driver: bridge 

@@ -1,11 +1,6 @@
 #!/usr/bin/env ts-node
 
-/**
- * 租屋數據導入腳本
- * 用法：ts-node scripts/import-listings.ts <文件路徑>
- * 
- * 此腳本用於將JSON格式的爬蟲數據導入到數據庫中
- */
+// 租屋數據導入腳本
 
 import { importCrawlerDataCLI } from '../src/services/importService';
 
@@ -27,7 +22,6 @@ async function run() {
   }
 }
 
-// 執行腳本
 run().catch(error => {
   console.error('腳本執行錯誤:', error);
   process.exit(1);
