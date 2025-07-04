@@ -10,7 +10,7 @@
     "logs": "docker-compose logs -f",
     "crawler": "sh scripts/run-crawler.sh",
     "crawler:docker": "sh scripts/run-docker-crawler.sh",
-    "clean": "docker system prune -f && docker volume prune -f && docker builder prune -f",
+    "clean": "docker system prune -f && docker volume prune -f && docker builder prune -f"
   },
   "engines": {
     "node": "20.10.0",
