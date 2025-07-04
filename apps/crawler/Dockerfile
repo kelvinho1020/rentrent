@@ -34,4 +34,4 @@ ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 
 # 預設執行爬蟲程式
-CMD ["python", "crawler.py"] 
+CMD ["python", "stable_crawl.py"] 

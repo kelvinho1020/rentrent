@@ -19,18 +19,18 @@ def stable_dual_city_crawl():
     all_data = []
     
     try:
-        # 明確定義兩個地區的處理順序，先爬新北
+        # 先爬新北
         regions = [
             {
                 "name": "新北市", 
                 "url": "https://rent.houseprice.tw/list/21_usage/27-26-15-23-33-28-32-36-37-34-35-31-29-30-38-39-40-41-14-13-16-20-19-21-22-18-17-24-25_zip/?p=1",
-                "target_count": 40,  # 新北市目標40筆 - 先爬新北
+                "target_count": 1,  # 新北市40筆
                 "max_pages": 3
             },
             {
                 "name": "台北市",
                 "url": "https://rent.houseprice.tw",
-                "target_count": 40,  # 台北市目標40筆 - 後爬台北
+                "target_count": 1,  # 台北市40筆
                 "max_pages": 3
             }
         ]

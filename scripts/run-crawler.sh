@@ -35,12 +35,12 @@ if [ $? -eq 0 ] && [ -f "$RESULT_FILE" ]; then
     # 複製資料
     echo "📥 複製資料..."
     BACKEND_DIR="$PROJECT_ROOT/apps/backend"
-    cp "$RESULT_FILE" "$BACKEND_DIR/stable_crawl_result_new.json"
+    cp "$RESULT_FILE" "$BACKEND_DIR/data/crawl_result_current.json"
     
     # 導入資料庫 
     echo "📥 導入資料庫..."
     cd "$PROJECT_ROOT"
-    /usr/bin/docker-compose exec -T backend npx ts-node scripts/import-listings.ts stable_crawl_result_new.json
+    /usr/bin/docker-compose exec -T backend npx ts-node scripts/import-listings.ts data/crawl_result_current.json
     
     echo "🎉 完成！"
 else

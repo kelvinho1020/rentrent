@@ -32,7 +32,7 @@ function generateDestinationHash(lat: number, lng: number, mode: string): string
  * @param centerLng 中心經度
  * @param radiusKm 半徑（公里）
  */
-async function findNearbyListings(centerLat: number, centerLng: number, radiusKm: number = 15) {
+async function findNearbyListings(centerLat: number, centerLng: number, radiusKm: number = 5) {
   // 簡單的經緯度範圍篩選（約略）
   const latRange = radiusKm / 111; // 1度緯度 ≈ 111km
   const lngRange = radiusKm / (111 * Math.cos((centerLat * Math.PI) / 180)); // 經度隨緯度變化
@@ -76,7 +76,7 @@ export async function smartCommuteSearch(params: {
   maxCommuteTime: number; // 分鐘
   radiusKm?: number;
 }) {
-  const { destination, mode, maxCommuteTime, radiusKm = 15 } = params;
+  const { destination, mode, maxCommuteTime, radiusKm = 5 } = params;
   
   logger.info(`🔍 智能通勤搜尋開始：目的地 (${destination.lat}, ${destination.lng}), 模式: ${mode}, 最大時間: ${maxCommuteTime}分鐘, 搜尋半徑: ${radiusKm}km`);
 

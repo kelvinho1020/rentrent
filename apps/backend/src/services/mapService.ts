@@ -428,7 +428,7 @@ export async function getIsochroneData(params: IsochroneParams): Promise<any> {
  */
 function generateFallbackIsochrone(center: [number, number], minutes: number, maxDistance: number = 5): any {
   // 直接使用maxDistance作為半徑，但確保不超過合理範圍
-  let radiusKm = Math.min(maxDistance, 15); // 最大限制15公里
+  let radiusKm = Math.min(maxDistance, 5); // 最大限制5公里
 
   // 確保最小半徑為0.5公里
   radiusKm = Math.max(radiusKm, 0.5);

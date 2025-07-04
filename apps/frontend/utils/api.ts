@@ -5,8 +5,8 @@ import mockListingsRaw from "@/data/mockListings.json";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
 
-// 強制使用假資料模式以確保城市顯示正確
-const USE_MOCK_DATA = true; // 修改：強制為 true
+// 使用真實的智能快取API系統
+const USE_MOCK_DATA = false; // 修改：改為 false 以使用 smart-commute API
 
 // 新增：混合模式 - 假房屋資料 + 真實 Google Maps API
 const USE_REAL_COMMUTE_API = process.env.NEXT_PUBLIC_USE_REAL_COMMUTE_API === "true";
@@ -39,7 +39,7 @@ export const searchByCommuteTime = async (params: CommuteSearchRequest): Promise
       min_size,
       city,
       district,
-      max_distance = 10, // 預設10公里
+      max_distance = 5, // 預設5公里
       transit_mode = "driving"
     } = params;
 
@@ -155,7 +155,7 @@ async function searchWithRealCommuteAPI(params: CommuteSearchRequest, listings: 
     min_size,
     city,
     district,
-    max_distance = 10,
+    max_distance = 5,
     transit_mode = "driving"
   } = params;
 
@@ -275,7 +275,7 @@ async function searchWithMockCommute(params: CommuteSearchRequest, listings: Lis
     min_size,
     city,
     district,
-    max_distance = 10,
+    max_distance = 5,
     transit_mode = "driving"
   } = params;
 

@@ -14,9 +14,6 @@ pnpm install
 # 啟動所有服務（資料庫、後端、前端）
 pnpm dev
 
-# 查看日誌
-pnpm logs
-
 # 停止服務  
 pnpm stop
 ```
@@ -27,9 +24,8 @@ pnpm stop
 ```bash
 # 爬取租屋資料並自動導入資料庫
 pnpm crawler
+pnpm crawler:docker
 ```
-
-就是這麼簡單！
 
 ## 🛠️ 其他
 
@@ -42,7 +38,7 @@ pnpm clean
 pnpm safe-clean
 ```
 
-## 📝 技術棧
+## 📝 Tech Stack
 
 - **前端**: React, TypeScript, Tailwind CSS, Zustand
 - **後端**: Node.js, Express, TypeScript, PostgreSQL, Redis  

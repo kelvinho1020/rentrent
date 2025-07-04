@@ -11,10 +11,9 @@ const commuteTimes = [
 ];
 
 const distanceOptions = [
+  { value: 2, label: "2 公里" },
   { value: 3, label: "3 公里" },
   { value: 5, label: "5 公里" },
-  { value: 10, label: "10 公里" },
-  { value: 15, label: "15 公里" },
 ];
 
 const SearchPanel: FC = () => {
@@ -196,7 +195,7 @@ const SearchPanel: FC = () => {
       
       <div className="mb-4">
         <label className="label mb-1">最大距離 (無法計算通勤時時使用)</label>
-        <div className="grid grid-cols-4 gap-2">
+        <div className="grid grid-cols-3 gap-2">
           {distanceOptions.map((option) => (
             <button
               key={option.value}
