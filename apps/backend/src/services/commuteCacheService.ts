@@ -1,6 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 import { logger } from '../utils/logger';
 import { getDistanceMatrix } from './mapService';
+import { redisClient } from '../config/redis';
 
 const prisma = new PrismaClient();
 
@@ -15,7 +16,6 @@ function generateDestinationHash(lat: number, lng: number, mode: string): string
 }
 
 async function findNearbyListings(centerLat: number, centerLng: number, radiusKm: number = 10, filters: SmartCommuteFilters = {}) {
-  // 簡單的經緯度範圍篩選（約略）
   const latRange = radiusKm / 111; // 1度緯度 ≈ 111km
   const lngRange = radiusKm / (111 * Math.cos((centerLat * Math.PI) / 180)); // 經度隨緯度變化
 
@@ -98,47 +98,46 @@ export async function smartCommuteSearch(params: {
   const destinationHash = generateDestinationHash(destination.lat, destination.lng, mode);
   const nearbyListingIds = nearbyListings.map(listing => listing.id);
 
-  const cachedResults = await prisma.commuteCache.findMany({
-    where: {
-      destinationHash,
-      listingId: { in: nearbyListingIds }, // 只查詢範圍內房屋的快取
-      durationMinutes: { lte: maxCommuteTime },
-    },
-    include: {
-      listing: {
-        select: {
-          id: true,
-          title: true,
-          price: true,
-          sizePing: true,
-          address: true,
-          district: true,
-          city: true,
-          longitude: true,
-          latitude: true,
-        },
-      },
-    },
-  });
+  // 從 Redis 批次查詢快取
+  const cacheKeys = nearbyListingIds.map(id => `commute:${destinationHash}:${id}`);
+  const cachedResults = await redisClient.mget(cacheKeys);
+  
+  const results = [];
+  const needCalculation = [];
 
-  logger.info(`📋 快取命中: ${cachedResults.length} 筆記錄`);
+  // 處理快取結果
+  for (let i = 0; i < nearbyListings.length; i++) {
+    const listing = nearbyListings[i];
+    const cachedData = cachedResults[i];
+    
+    if (cachedData) {
+      try {
+        const parsedData = JSON.parse(cachedData);
+        if (parsedData.durationMinutes <= maxCommuteTime) {
+          results.push({
+            id: listing.id,
+            title: listing.title,
+            price: listing.price,
+            size_ping: listing.sizePing,
+            address: listing.address,
+            district: listing.district,
+            city: listing.city,
+            coordinates: [listing.longitude, listing.latitude] as [number, number],
+            commute_time: parsedData.durationMinutes,
+            commute_distance: parsedData.distanceKm || undefined,
+            from_cache: true,
+          });
+        }
+      } catch (error) {
+        logger.warn('Redis 快取資料解析失敗', { error, listingId: listing.id });
+        needCalculation.push(listing);
+      }
+    } else {
+      needCalculation.push(listing);
+    }
+  }
 
-  const results = cachedResults.map((cache: any) => ({
-    id: cache.listing.id,
-    title: cache.listing.title,
-    price: cache.listing.price,
-    size_ping: cache.listing.sizePing,
-    address: cache.listing.address,
-    district: cache.listing.district,
-    city: cache.listing.city,
-    coordinates: [cache.listing.longitude, cache.listing.latitude] as [number, number],
-    commute_time: cache.durationMinutes,
-    commute_distance: cache.distanceKm,
-    from_cache: true,
-  }));
-
-  const cachedListingIds = new Set(cachedResults.map((r: any) => r.listingId));
-  const needCalculation = nearbyListings.filter(listing => !cachedListingIds.has(listing.id));
+  logger.info(`📋 Redis 快取命中: ${results.length} 筆記錄`);
   
   if (needCalculation.length > 0) {
     logger.info(`🔄 需要計算通勤時間: ${needCalculation.length} 間房屋`);
@@ -146,6 +145,7 @@ export async function smartCommuteSearch(params: {
     try {
       // 限制批次大小，避免 Google API 超限
       const batchSize = 20; 
+      const cacheData = [];
       
       for (let i = 0; i < needCalculation.length; i += batchSize) {
         const batchListings = needCalculation.slice(i, i + batchSize);
@@ -163,8 +163,6 @@ export async function smartCommuteSearch(params: {
         );
 
         if (response && response.rows) {
-          const cacheData = [];
-          
           for (let j = 0; j < batchListings.length; j++) {
             const listing = batchListings[j];
             const element = response.rows[j]?.elements[0];
@@ -174,10 +172,12 @@ export async function smartCommuteSearch(params: {
               const distanceKm = element.distance ? element.distance.value / 1000 : null;
               
               cacheData.push({
-                listingId: listing.id,
-                destinationHash,
-                durationMinutes,
-                distanceKm,
+                key: `commute:${destinationHash}:${listing.id}`,
+                value: JSON.stringify({
+                  durationMinutes,
+                  distanceKm,
+                  calculatedAt: new Date().toISOString(),
+                }),
               });
               
               if (durationMinutes <= maxCommuteTime) {
@@ -191,30 +191,19 @@ export async function smartCommuteSearch(params: {
                   city: listing.city,
                   coordinates: [listing.longitude, listing.latitude] as [number, number],
                   commute_time: durationMinutes,
-                  commute_distance: distanceKm,
+                  commute_distance: distanceKm || undefined,
                   from_cache: false,
                 });
               }
             } else {
               cacheData.push({
-                listingId: listing.id,
-                destinationHash,
-                durationMinutes: 999,
-                distanceKm: null,
+                key: `commute:${destinationHash}:${listing.id}`,
+                value: JSON.stringify({
+                  durationMinutes: 999,
+                  distanceKm: null,
+                  calculatedAt: new Date().toISOString(),
+                }),
               });
-            }
-          }
-          
-          // 批次寫入快取
-          if (cacheData.length > 0) {
-            try {
-              await prisma.commuteCache.createMany({
-                data: cacheData,
-                skipDuplicates: true,
-              });
-              logger.info(`💾 成功快取 ${cacheData.length} 筆新記錄`);
-            } catch (error) {
-              logger.warn('快取寫入失敗', { error });
             }
           }
         }
@@ -224,58 +213,32 @@ export async function smartCommuteSearch(params: {
           await new Promise(resolve => setTimeout(resolve, 100));
         }
       }
+      
+      // 批次儲存到 Redis
+      if (cacheData.length > 0) {
+        try {
+          const pipeline = redisClient.pipeline();
+          const expiry = 60 * 60 * 24 * 7; // 7天過期
+          
+          cacheData.forEach(({ key, value }) => {
+            pipeline.setex(key, expiry, value);
+          });
+          
+          await pipeline.exec();
+          logger.info(`💾 成功快取 ${cacheData.length} 筆新記錄到 Redis`);
+        } catch (error) {
+          logger.warn('Redis 快取寫入失敗', { error });
+        }
+      }
     } catch (error) {
       logger.error('計算通勤時間失敗', { error });
     }
   }
 
-  // Step 4: 按通勤時間排序並返回
+  // 按通勤時間排序並返回
   results.sort((a, b) => a.commute_time - b.commute_time);
   
   logger.info(`✅ 最終結果: ${results.length} 筆符合條件的房屋`);
   
   return results;
 }
-
-/**
- * 查詢熱門目的地統計
- */
-export async function getPopularDestinations(limit: number = 10) {
-  const popularDestinations = await prisma.commuteCache.groupBy({
-    by: ['destinationHash'],
-    _count: {
-      id: true,
-    },
-    orderBy: {
-      _count: {
-        id: 'desc',
-      },
-    },
-    take: limit,
-  });
-
-  return popularDestinations.map((dest: any) => ({
-    destinationHash: dest.destinationHash,
-    searchCount: dest._count.id,
-  }));
-}
-
-/**
- * 清理過期的快取記錄
- * @param daysOld 清理多少天前的記錄
- */
-export async function cleanupOldCache(daysOld: number = 30) {
-  const cutoffDate = new Date();
-  cutoffDate.setDate(cutoffDate.getDate() - daysOld);
-
-  const deletedCount = await prisma.commuteCache.deleteMany({
-    where: {
-      updatedAt: {
-        lt: cutoffDate,
-      },
-    },
-  });
-
-  logger.info(`清理了 ${deletedCount.count} 筆過期快取記錄`);
-  return deletedCount.count;
-} 
