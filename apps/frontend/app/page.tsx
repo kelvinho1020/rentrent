@@ -37,15 +37,16 @@ export default function Home() {
   }, []);
 
   return (
-    <div className="flex flex-col h-full min-h-0">
+    <div className="flex flex-col h-full md:h-[800px] min-h-0">
       {/* 全頁面載入中 */}
       {isFullPageLoading && (
         <FullPageLoading message={fullPageLoadingMessage} />
       )}
       
-      <div className="flex-1 grid grid-cols-12 h-full min-h-0">
+      <div className="flex-1 grid grid-cols-12 h-full">
+      {/* <div className="flex-1 grid grid-cols-12 h-full min-h-[766px]"> */}
         {/* 左側面板 */}
-        <div className="col-span-12 md:col-span-4 lg:col-span-3 border-r border-gray-200 flex flex-col h-full overflow-hidden">
+        <div className="col-span-12 md:col-span-4 lg:col-span-3 border-r border-gray-200 flex flex-col h-full overflow-hidden max-h-[800px]">
           {/* 頁籤切換 */}
           <div className="flex border-b border-gray-200">
             <button
