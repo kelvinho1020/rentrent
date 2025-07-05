@@ -17,16 +17,16 @@ jobs:
         username: ${{ secrets.SSH_USER }}
         key: ${{ secrets.SSH_PRIVATE_KEY }}
         passphrase: ${{ secrets.SSH_PASSPHRASE }}
-        script: |
+    script: |
           cd ~/rentrent
           git pull origin master
           
           echo "🛠️ Rebuilding containers..."
           docker compose -f docker-compose.prod.yml up -d --build
 
-          echo "⏳ Waiting for backend container to be healthy..."
-          until docker exec rentrent-backend-prod true > /dev/null 2>&1; do
-            echo "⏳ Backend not ready yet. Retrying in 3s..."
+          echo "⏳ Waiting for Postgres to be ready..."
+          until docker exec rentrent-backend-prod pg_isready -h db -U postgres > /dev/null 2>&1; do
+            echo "⏳ Postgres not ready yet. Retrying in 3s..."
             sleep 3
           done
 
