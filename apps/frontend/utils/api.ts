@@ -1,17 +1,14 @@
 import axios from "axios";
 import { CommuteSearchRequest, ListingBasic, ListingDetail, SearchResponse } from "@/types";
-// 引入假資料
 import mockListingsRaw from "@/data/mockListings.json";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
+console.log("====>", API_URL);
 
-// 使用真實的智能快取API系統
-const USE_MOCK_DATA = false; // 修改：改為 false 以使用 smart-commute API
-
+const USE_MOCK_DATA = false;
 // 新增：混合模式 - 假房屋資料 + 真實 Google Maps API
 const USE_REAL_COMMUTE_API = process.env.NEXT_PUBLIC_USE_REAL_COMMUTE_API === "true";
 
-// 將假資料轉換為正確的類型
 const mockListings: ListingBasic[] = mockListingsRaw.map(listing => ({
   ...listing,
   coordinates: listing.coordinates as [number, number]
@@ -24,11 +21,8 @@ const api = axios.create({
   },
 });
 
-// 依通勤時間搜尋租屋物件
 export const searchByCommuteTime = async (params: CommuteSearchRequest): Promise<SearchResponse> => {
-  // 如果使用假資料
   if (USE_MOCK_DATA) {
-    // 模擬 API 延遲
     await new Promise(resolve => setTimeout(resolve, 500));
     
     const {
