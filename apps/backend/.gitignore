@@ -40,4 +40,4 @@ lerna-debug.log*
 !.env.example
 
 # Prisma
-/prisma/migrations 
+# /prisma/migrations 
