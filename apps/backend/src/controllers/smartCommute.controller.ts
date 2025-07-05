@@ -9,7 +9,19 @@ import { smartCommuteSearch, getPopularDestinations, cleanupOldCache } from '../
  */
 export async function searchByCommute(req: Request, res: Response) {
 	try {
-		const { lat, lng, mode = 'transit', maxTime = 30, radius = 15 } = req.body;
+		const { 
+			lat, 
+			lng, 
+			mode = 'transit', 
+			maxTime = 30, 
+			radius = 15,
+			// 新增過濾條件
+			minPrice,
+			maxPrice,
+			minSize,
+			city,
+			district
+		} = req.body;
 
 		// 參數驗證
 		if (!lat || !lng) {
@@ -47,14 +59,22 @@ export async function searchByCommute(req: Request, res: Response) {
 			mode,
 			maxTime,
 			radius,
+			filters: { minPrice, maxPrice, minSize, city, district }
 		});
 
-		// 執行智能搜尋
+		// 執行智能搜尋，包含過濾條件
 		const results = await smartCommuteSearch({
 			destination: { lat, lng },
 			mode,
 			maxCommuteTime: maxTime,
 			radiusKm: radius,
+			filters: {
+				minPrice,
+				maxPrice,
+				minSize,
+				city,
+				district
+			}
 		});
 
 		const endTime = Date.now();
@@ -79,6 +99,7 @@ export async function searchByCommute(req: Request, res: Response) {
 		console.log(`⚡ 快取命中率: ${results.length > 0 ? (cachedCount / results.length * 100).toFixed(1) : 0}%`);
 		console.log(`📍 目的地座標: ${lat}, ${lng}`);
 		console.log(`🎯 交通方式: ${mode}, 最大時間: ${maxTime}分鐘, 搜尋半徑: ${radius}km`);
+		console.log(`📊 過濾條件: 價格 ${minPrice || '不限'}-${maxPrice || '不限'}, 坪數 ${minSize || '不限'}+, 地區 ${city || '不限'}/${district || '不限'}`);
 		
 		if (calculatedCount > 0) {
 			console.log(`🌐 本次 Google Maps API 調用次數: ${Math.ceil(calculatedCount / 20)} 次 (批次大小: 20)`);
@@ -100,6 +121,7 @@ export async function searchByCommute(req: Request, res: Response) {
 						mode,
 						maxCommuteTime: maxTime,
 						radiusKm: radius,
+						filters: { minPrice, maxPrice, minSize, city, district }
 					},
 					processingTime: `${duration}ms`,
 				},

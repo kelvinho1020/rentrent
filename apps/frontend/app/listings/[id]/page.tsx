@@ -58,7 +58,6 @@ export default function ListingDetailPage({
         interactive: true,
       });
 
-      // 添加導航控制
       map.current.addControl(
         new mapboxgl.NavigationControl({ showCompass: false }),
         "top-right"

@@ -14,23 +14,43 @@ function generateDestinationHash(lat: number, lng: number, mode: string): string
   return `${quantizedLat.toFixed(3)},${quantizedLng.toFixed(3)}:${mode}`;
 }
 
-async function findNearbyListings(centerLat: number, centerLng: number, radiusKm: number = 10) {
+async function findNearbyListings(centerLat: number, centerLng: number, radiusKm: number = 10, filters: SmartCommuteFilters = {}) {
   // 簡單的經緯度範圍篩選（約略）
   const latRange = radiusKm / 111; // 1度緯度 ≈ 111km
   const lngRange = radiusKm / (111 * Math.cos((centerLat * Math.PI) / 180)); // 經度隨緯度變化
 
-  const nearbyListings = await prisma.listing.findMany({
-    where: {
-      isActive: true,
-      latitude: {
-        gte: centerLat - latRange,
-        lte: centerLat + latRange,
-      },
-      longitude: {
-        gte: centerLng - lngRange,
-        lte: centerLng + lngRange,
-      },
+  // 構建查詢條件
+  const where: any = {
+    isActive: true,
+    latitude: {
+      gte: centerLat - latRange,
+      lte: centerLat + latRange,
     },
+    longitude: {
+      gte: centerLng - lngRange,
+      lte: centerLng + lngRange,
+    },
+  };
+
+  // 添加過濾條件
+  if (filters.minPrice !== undefined) {
+    where.price = { gte: filters.minPrice };
+  }
+  if (filters.maxPrice !== undefined) {
+    where.price = { ...where.price, lte: filters.maxPrice };
+  }
+  if (filters.minSize !== undefined) {
+    where.sizePing = { gte: filters.minSize };
+  }
+  if (filters.city) {
+    where.city = filters.city;
+  }
+  if (filters.district) {
+    where.district = filters.district;
+  }
+
+  const nearbyListings = await prisma.listing.findMany({
+    where,
     select: {
       id: true,
       title: true,
@@ -48,17 +68,27 @@ async function findNearbyListings(centerLat: number, centerLng: number, radiusKm
   return nearbyListings;
 }
 
+interface SmartCommuteFilters {
+  minPrice?: number;
+  maxPrice?: number;
+  minSize?: number;
+  city?: string;
+  district?: string;
+}
+
 export async function smartCommuteSearch(params: {
   destination: { lat: number; lng: number };
   mode: string;
   maxCommuteTime: number; // 分鐘
   radiusKm?: number;
+  filters?: SmartCommuteFilters;
 }) {
-  const { destination, mode, maxCommuteTime, radiusKm = 10 } = params;
+  const { destination, mode, maxCommuteTime, radiusKm = 10, filters = {} } = params;
   
   logger.info(`🔍 智能通勤搜尋開始：目的地 (${destination.lat}, ${destination.lng}), 模式: ${mode}, 最大時間: ${maxCommuteTime}分鐘, 搜尋半徑: ${radiusKm}km`);
 
-  const nearbyListings = await findNearbyListings(destination.lat, destination.lng, radiusKm);
+  // 先根據地理位置篩選，再根據基本條件篩選
+  const nearbyListings = await findNearbyListings(destination.lat, destination.lng, radiusKm, filters);
   logger.info(`🌍 地理篩選結果: 在 ${radiusKm}km 範圍內找到 ${nearbyListings.length} 間房屋`);
 
   if (nearbyListings.length === 0) {
@@ -121,7 +151,9 @@ export async function smartCommuteSearch(params: {
         const batchListings = needCalculation.slice(i, i + batchSize);
         logger.info(`📊 處理第 ${Math.floor(i/batchSize) + 1} 批，共 ${batchListings.length} 間房屋`);
         
-        const origins = batchListings.map(listing => `${listing.latitude},${listing.longitude}`);
+        const origins = batchListings.map(listing => 
+          `${listing.latitude},${listing.longitude}`
+        );
         const destinationCoord = `${destination.lat},${destination.lng}`;
         
         const response = await getDistanceMatrix(

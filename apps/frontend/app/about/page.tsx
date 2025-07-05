@@ -107,7 +107,7 @@ export default function AboutPage() {
 							如果您有任何問題或建議，歡迎隨時聯絡我們
 						</p>
 						<p className="text-primary-200">
-							Email: <a href="mailto:contact@rentrent.tw" className="text-white underline hover:text-primary-100">contact@rentrent.tw</a>
+							Email: <a href="mailto:rentrent.rent.com" className="text-white underline hover:text-primary-100">rentrent.rent.com</a>
 						</p>
 					</section>
 				</div>

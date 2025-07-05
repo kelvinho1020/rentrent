@@ -47,7 +47,7 @@ export default function RootLayout({
               </nav>
             </div>
           </header>
-          <div className="flex-1 overflow-scroll">
+          <div className="flex-1 overflow-y-scroll">
             {children}
           </div>
           <footer className="bg-gray-900 text-white py-6">
@@ -59,7 +59,7 @@ export default function RootLayout({
                 </div>
                 <div>
                   <h3 className="text-lg font-semibold mb-2">聯絡我們</h3>
-                  <p className="text-gray-400">Email: contact@rentrent.tw</p>
+                  <p className="text-gray-400">Email: rentrent@rent.rent</p>
                 </div>
               </div>
               <div className="mt-4 pt-4 border-t border-gray-800 text-center text-gray-500 text-sm">
