@@ -3,7 +3,6 @@ import { CommuteSearchRequest, ListingBasic, ListingDetail, SearchResponse } fro
 import mockListingsRaw from "@/data/mockListings.json";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
-console.log("====>", API_URL);
 
 const USE_MOCK_DATA = false;
 // 新增：混合模式 - 假房屋資料 + 真實 Google Maps API
