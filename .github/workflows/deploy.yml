@@ -21,3 +21,4 @@ jobs:
           cd ~/rentrent
           git pull origin master
           docker compose -f docker-compose.prod.yml up -d --build
+          docker exec rentrent-backend-prod pnpm ts-node /app/apps/backend/scripts/import-listings.ts /app/apps/backend/data/crawl_result_current.json
