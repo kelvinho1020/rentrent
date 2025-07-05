@@ -98,40 +98,40 @@ export async function smartCommuteSearch(params: {
   const destinationHash = generateDestinationHash(destination.lat, destination.lng, mode);
   const nearbyListingIds = nearbyListings.map(listing => listing.id);
 
-  // 從 Redis 批次查詢快取
-  const cacheKeys = nearbyListingIds.map(id => `commute:${destinationHash}:${id}`);
-  const cachedResults = await redisClient.mget(cacheKeys);
+  // 從 Redis 查詢快取 - 使用目的地+交通方式作為 key
+  const cacheKey = `commute:${destinationHash}`;
+  const cachedData = await redisClient.get(cacheKey);
   
   const results = [];
   const needCalculation = [];
+  let cachedCommuteData: Record<number, { durationMinutes: number; distanceKm?: number | null }> = {};
 
   // 處理快取結果
-  for (let i = 0; i < nearbyListings.length; i++) {
-    const listing = nearbyListings[i];
-    const cachedData = cachedResults[i];
+  if (cachedData) {
+    try {
+      cachedCommuteData = JSON.parse(cachedData);
+    } catch (error) {
+      logger.warn('Redis 快取資料解析失敗', { error });
+    }
+  }
+
+  // 檢查哪些房屋有快取資料
+  for (const listing of nearbyListings) {
+    const commuteData = cachedCommuteData[listing.id];
     
-    if (cachedData) {
-      try {
-        const parsedData = JSON.parse(cachedData);
-        if (parsedData.durationMinutes <= maxCommuteTime) {
-          results.push({
-            id: listing.id,
-            title: listing.title,
-            price: listing.price,
-            size_ping: listing.sizePing,
-            address: listing.address,
-            district: listing.district,
-            city: listing.city,
-            coordinates: [listing.longitude, listing.latitude] as [number, number],
-            commute_time: parsedData.durationMinutes,
-            commute_distance: parsedData.distanceKm || undefined,
-            from_cache: true,
-          });
-        }
-      } catch (error) {
-        logger.warn('Redis 快取資料解析失敗', { error, listingId: listing.id });
-        needCalculation.push(listing);
-      }
+    if (commuteData && commuteData.durationMinutes <= maxCommuteTime) {
+      results.push({
+        id: listing.id,
+        title: listing.title,
+        price: listing.price,
+        size_ping: listing.sizePing,
+        address: listing.address,
+        district: listing.district,
+        city: listing.city,
+        coordinates: [listing.longitude, listing.latitude] as [number, number],
+        commute_time: commuteData.durationMinutes,
+        commute_distance: commuteData.distanceKm || undefined,
+      });
     } else {
       needCalculation.push(listing);
     }
@@ -145,7 +145,7 @@ export async function smartCommuteSearch(params: {
     try {
       // 限制批次大小，避免 Google API 超限
       const batchSize = 20; 
-      const cacheData = [];
+      const newCommuteData: Record<number, { durationMinutes: number; distanceKm?: number | null }> = {};
       
       for (let i = 0; i < needCalculation.length; i += batchSize) {
         const batchListings = needCalculation.slice(i, i + batchSize);
@@ -171,14 +171,10 @@ export async function smartCommuteSearch(params: {
               const durationMinutes = Math.ceil(element.duration.value / 60);
               const distanceKm = element.distance ? element.distance.value / 1000 : null;
               
-              cacheData.push({
-                key: `commute:${destinationHash}:${listing.id}`,
-                value: JSON.stringify({
-                  durationMinutes,
-                  distanceKm,
-                  calculatedAt: new Date().toISOString(),
-                }),
-              });
+              newCommuteData[listing.id] = {
+                durationMinutes,
+                distanceKm,
+              };
               
               if (durationMinutes <= maxCommuteTime) {
                 results.push({
@@ -192,18 +188,13 @@ export async function smartCommuteSearch(params: {
                   coordinates: [listing.longitude, listing.latitude] as [number, number],
                   commute_time: durationMinutes,
                   commute_distance: distanceKm || undefined,
-                  from_cache: false,
                 });
               }
             } else {
-              cacheData.push({
-                key: `commute:${destinationHash}:${listing.id}`,
-                value: JSON.stringify({
-                  durationMinutes: 999,
-                  distanceKm: null,
-                  calculatedAt: new Date().toISOString(),
-                }),
-              });
+              newCommuteData[listing.id] = {
+                durationMinutes: 999,
+                distanceKm: null,
+              };
             }
           }
         }
@@ -214,18 +205,14 @@ export async function smartCommuteSearch(params: {
         }
       }
       
-      // 批次儲存到 Redis
-      if (cacheData.length > 0) {
+      // 合併新計算的資料到快取
+      if (Object.keys(newCommuteData).length > 0) {
         try {
-          const pipeline = redisClient.pipeline();
+          const updatedCacheData = { ...cachedCommuteData, ...newCommuteData };
           const expiry = 60 * 60 * 24 * 7; // 7天過期
           
-          cacheData.forEach(({ key, value }) => {
-            pipeline.setex(key, expiry, value);
-          });
-          
-          await pipeline.exec();
-          logger.info(`💾 成功快取 ${cacheData.length} 筆新記錄到 Redis`);
+          await redisClient.setex(cacheKey, expiry, JSON.stringify(updatedCacheData));
+          logger.info(`💾 成功快取 ${Object.keys(newCommuteData).length} 筆新記錄到 Redis`);
         } catch (error) {
           logger.warn('Redis 快取寫入失敗', { error });
         }
@@ -240,5 +227,8 @@ export async function smartCommuteSearch(params: {
   
   logger.info(`✅ 最終結果: ${results.length} 筆符合條件的房屋`);
   
-  return results;
+  return {
+    listings: results,
+    from_cache: needCalculation.length === 0 // 如果沒有需要計算的，表示全部來自快取
+  };
 }
