@@ -55,7 +55,7 @@ export default function RootLayout({
               <div className="flex flex-col md:flex-row justify-between">
                 <div className="mb-4 md:mb-0">
                   <h2 className="text-xl font-bold mb-2">RentRent</h2>
-                  <p className="text-gray-400">以通勤時間為核心的租屋搜尋平台</p>
+                  <p className="text-gray-400">以通勤時間為核心的租屋搜尋平台</p> 
                 </div>
                 <div>
                   <h3 className="text-lg font-semibold mb-2">聯絡我們</h3>
