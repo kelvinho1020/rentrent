@@ -19,4 +19,4 @@ jobs:
         passphrase: ${{ secrets.SSH_PASSPHRASE }}
         script: |
           chmod +x ~/rentrent/scripts/deploy.sh
-          ~/rentrent/scripts/deploy.sh
+          ~/rentrent/scripts/deploy.sh 
