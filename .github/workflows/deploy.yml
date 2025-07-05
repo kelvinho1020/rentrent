@@ -20,5 +20,18 @@ jobs:
         script: |
           cd ~/rentrent
           git pull origin master
+          
+          echo "🛠️ Rebuilding containers..."
           docker compose -f docker-compose.prod.yml up -d --build
+
+          echo "⏳ Waiting for Postgres to be ready..."
+          until docker exec rentrent-backend-prod pg_isready -h db -U postgres > /dev/null 2>&1; do
+            echo "⏳ Postgres not ready yet. Retrying in 3s..."
+            sleep 3
+          done
+
+          echo "📦 Running Prisma migration..."
+          docker exec rentrent-backend-prod pnpm prisma migrate deploy
+
+          echo "📥 Importing listings..."
           docker exec rentrent-backend-prod pnpm ts-node /app/apps/backend/scripts/import-listings.ts /app/apps/backend/data/crawl_result_current.json

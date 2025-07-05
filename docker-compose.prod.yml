@@ -35,8 +35,10 @@ services:
       - REDIS_URL=redis://:${REDIS_PASSWORD:-your_redis_password}@redis:6379
       - PORT=8000
     depends_on:
-      - db
-      - redis
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
     restart: unless-stopped
     networks:
       - rentrent-network
@@ -54,10 +56,14 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./apps/backend/prisma/migrations:/docker-entrypoint-initdb.d
     restart: unless-stopped
     networks:
       - rentrent-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
   # Redis 緩存 (生產環境)
   redis:
