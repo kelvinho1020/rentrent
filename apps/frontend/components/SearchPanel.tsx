@@ -106,7 +106,7 @@ const SearchPanel: FC = () => {
 
   return (
     <div className="bg-white p-4 rounded-lg shadow-md">
-      <h2 className="text-xl font-semibold text-gray-900 mb-4">搜尋設定</h2>
+      <h2 className="text-xl font-semibold text-gray-900 mb-4">搜尋設定a</h2>
       
       {error && (
         <div className="mb-4 p-2 bg-red-50 text-red-700 text-sm rounded">

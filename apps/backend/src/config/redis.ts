@@ -82,7 +82,7 @@ try {
 export const redisClient = client;
 
 /**
- * 優雅關閉 Redis 連接
+ * 關閉 Redis 連接
  */
 export async function closeRedisConnection(): Promise<void> {
   try {
