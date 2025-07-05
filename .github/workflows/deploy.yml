@@ -17,7 +17,7 @@ jobs:
         username: ${{ secrets.SSH_USER }}
         key: ${{ secrets.SSH_PRIVATE_KEY }}
         passphrase: ${{ secrets.SSH_PASSPHRASE }}
-    script: |
+        script: |
           cd ~/rentrent
           git pull origin master
           
