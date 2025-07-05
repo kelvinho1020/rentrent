@@ -37,13 +37,13 @@ export default function Home() {
   }, []);
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full min-h-0">
       {/* 全頁面載入中 */}
       {isFullPageLoading && (
         <FullPageLoading message={fullPageLoadingMessage} />
       )}
       
-      <div className="flex-1 grid grid-cols-12 h-full">
+      <div className="flex-1 grid grid-cols-12 h-full min-h-0">
         {/* 左側面板 */}
         <div className="col-span-12 md:col-span-4 lg:col-span-3 border-r border-gray-200 flex flex-col h-full overflow-hidden">
           {/* 頁籤切換 */}
@@ -78,7 +78,7 @@ export default function Home() {
         </div>
 
         {/* 地圖區域 */}
-        <div className={`col-span-12 md:col-span-8 lg:col-span-9 min-h-screen-h-0 lg:h-auto transition-opacity duration-500 ${mapLoaded ? 'opacity-100' : 'opacity-0'}`}>
+        <div className={`col-span-12 md:col-span-8 lg:col-span-9 h-[calc(100vh-12rem)] md:h-auto transition-opacity duration-500 ${mapLoaded ? 'opacity-100' : 'opacity-0'}`}>
           <Map />
         </div>
       </div>

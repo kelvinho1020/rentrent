@@ -24,7 +24,7 @@ export default function RootLayout({
         />
       </head>
       <body className="h-full">
-        <main className="flex flex-col h-screen">
+        <main className="flex flex-col min-h-screen">
           <header className="bg-white shadow-sm">
             <div className="container mx-auto px-4 py-4 flex justify-between items-center">
               <div className="flex items-center">
