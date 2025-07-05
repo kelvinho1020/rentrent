@@ -139,7 +139,7 @@ export async function importListingsFromCrawlerData(filePath: string): Promise<I
         }
       } catch (error) {
         result.errors++;
-	console.log(error);
+	      console.log(error);
         logger.error(`❌ 處理失敗: ${item.title}`, { error });
       }
     }

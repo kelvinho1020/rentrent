@@ -1,16 +1,13 @@
 import { Router } from 'express';
 import {
 	searchByCommute,
-	getPopularDestinationsController,
-	cleanupCacheController,
-	getCacheStats,
 } from '../controllers/smartCommute.controller';
 
 const router = Router();
 
 /**
  * POST /api/smart-commute/search
- * 智能通勤搜尋
+ * 通勤搜尋
  * 
  * Body:
  * {
@@ -22,31 +19,5 @@ const router = Router();
  * }
  */
 router.post('/search', searchByCommute);
-
-/**
- * GET /api/smart-commute/popular-destinations
- * 取得熱門目的地
- * 
- * Query:
- * ?limit=10
- */
-router.get('/popular-destinations', getPopularDestinationsController);
-
-/**
- * POST /api/smart-commute/cleanup-cache
- * 清理舊快取（管理員功能）
- * 
- * Body:
- * {
- *   "daysOld": 30
- * }
- */
-router.post('/cleanup-cache', cleanupCacheController);
-
-/**
- * GET /api/smart-commute/cache-stats
- * 取得快取統計資訊
- */
-router.get('/cache-stats', getCacheStats);
 
 export default router; 

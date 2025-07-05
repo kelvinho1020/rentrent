@@ -130,7 +130,6 @@ export default function Map() {
 				const data = await getIsochrone(
 					workLocation.latitude,
 					workLocation.longitude,
-					commuteTime,
 					maxDistance
 				);
 				
@@ -146,7 +145,7 @@ export default function Map() {
 		};
 		
 		fetchIsochrone();
-	}, [workLocation, commuteTime, maxDistance, setIsLoading, setIsochromePolygon, mapInitialized]);
+	}, [workLocation, maxDistance, setIsLoading, setIsochromePolygon, mapInitialized]);
 	
 	// 處理等時線顯示
 	useEffect(() => {

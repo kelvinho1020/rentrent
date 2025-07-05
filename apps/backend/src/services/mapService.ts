@@ -13,25 +13,6 @@ function normalizeCoordinate(coordinate: number, precision: number = 2): number 
   return Math.round(coordinate * Math.pow(10, precision)) / Math.pow(10, precision);
 }
 
-function normalizeCoordinateString(coordString: string): string {
-  // 處理批量座標 (用 | 分隔)
-  if (coordString.includes('|')) {
-    return coordString.split('|')
-      .map(coord => {
-        const [lat, lng] = coord.split(',').map(Number);
-        if (isNaN(lat) || isNaN(lng)) return coord;
-        return `${normalizeCoordinate(lat)},${normalizeCoordinate(lng)}`;
-      })
-      .join('|');
-  }
-  
-  // 處理單一座標
-  const [lat, lng] = coordString.split(',').map(Number);
-  if (isNaN(lat) || isNaN(lng)) return coordString; // 如果不是座標格式，保持原樣
-  
-  return `${normalizeCoordinate(lat)},${normalizeCoordinate(lng)}`;
-}
-
 interface DistanceMatrixResponse {
   status: string;
   rows: {
@@ -51,9 +32,8 @@ interface DistanceMatrixResponse {
 
 interface IsochroneParams {
   location: [number, number];
-  minutes: number;
   mode: string;
-  maxDistance?: number; // 新增最大距離參數（公里）
+  maxDistance?: number; // 最大距離參數（公里）
 }
 
 export async function getDistanceMatrix(
@@ -65,10 +45,6 @@ export async function getDistanceMatrix(
     // 檢查是否為批量請求（包含 | 符號）
     const isBatchRequest = origin.includes('|');
     
-    const normalizedOrigin = normalizeCoordinateString(origin);
-    const normalizedDestination = normalizeCoordinateString(destination);
-
-    // 檢查 API Key 是否存在
     if (!GOOGLE_MAPS_API_KEY || GOOGLE_MAPS_API_KEY === 'your_google_maps_api_key_here') {
       throw new Error('Google Maps API Key 未設定');
     }
@@ -107,12 +83,12 @@ export async function getDistanceMatrix(
  * @param params 等時線參數
  */
 export async function getIsochroneData(params: IsochroneParams): Promise<any> {
-  const { location, minutes, mode, maxDistance = 10 } = params;
+  const { location, mode, maxDistance = 10 } = params;
   
   const normalizedLng = normalizeCoordinate(location[0]);
   const normalizedLat = normalizeCoordinate(location[1]);
   
-  const cacheKey = `isochrone:${normalizedLng},${normalizedLat}:${minutes}:${mode}:${maxDistance}`;
+  const cacheKey = `isochrone:${normalizedLng},${normalizedLat}:${mode}:${maxDistance}`;
   
   try {
     // 檢查緩存
@@ -123,16 +99,16 @@ export async function getIsochroneData(params: IsochroneParams): Promise<any> {
     }
 
     // 生成圓形等時線
-    const isochroneData = generateCircleIsochrone([normalizedLng, normalizedLat], minutes, maxDistance);
+    const isochroneData = generateCircleIsochrone([normalizedLng, normalizedLat], maxDistance);
     await redisClient.setex(cacheKey, CACHE_EXPIRY, JSON.stringify(isochroneData));
     return isochroneData;
   } catch (error) {
     logger.error('獲取等時線數據失敗', { error });
-    return generateCircleIsochrone([normalizedLng, normalizedLat], minutes, maxDistance);
+    return generateCircleIsochrone([normalizedLng, normalizedLat], maxDistance);
   }
 }
 
-function generateCircleIsochrone(center: [number, number], minutes: number, maxDistance: number = 10): any {
+function generateCircleIsochrone(center: [number, number], maxDistance: number = 10): any {
   const radiusKm = Math.min(Math.max(maxDistance, 0.5), 10);
   
   return {
@@ -143,7 +119,6 @@ function generateCircleIsochrone(center: [number, number], minutes: number, maxD
         properties: {
           center: center,
           radius: radiusKm,
-          minutes: minutes,
           maxDistance: maxDistance,
           travelMode: 'driving',
         },

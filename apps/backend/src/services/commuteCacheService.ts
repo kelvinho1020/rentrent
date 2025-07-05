@@ -210,7 +210,6 @@ export async function smartCommuteSearch(params: {
         try {
           const updatedCacheData = { ...cachedCommuteData, ...newCommuteData };
           const expiry = 60 * 60 * 24 * 7; // 7天過期
-          
           await redisClient.setex(cacheKey, expiry, JSON.stringify(updatedCacheData));
           logger.info(`💾 成功快取 ${Object.keys(newCommuteData).length} 筆新記錄到 Redis`);
         } catch (error) {

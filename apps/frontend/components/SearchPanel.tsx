@@ -90,7 +90,7 @@ const SearchPanel: FC = () => {
 
   useEffect(() => {
     if (filteredListings.length > 0) {
-      const resultMessage = `找到 ${filteredListings.length} 筆符合條件的租屋物件（圈圈範圍內）`;
+      const resultMessage = `找到 ${filteredListings.length} 筆符合條件的租屋物件`;
       setSearchResult(resultMessage);
     } else if (filteredListings.length === 0 && searchResult?.includes("正在進行圈圈範圍篩選")) {
       // 如果篩選完成但沒有結果

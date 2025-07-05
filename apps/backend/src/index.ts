@@ -26,8 +26,7 @@ app.use(errorHandler);
 const startServer = async () => {
   try {
     app.listen(port, () => {
-      logger.info(`伺服器正在運行: http://localhost:${port}`);
-      logger.info(`API 文檔: http://localhost:${port}${config.apiPrefix}/docs`);
+      logger.info(`伺服器正在運行: ${port}`);
     });
   } catch (error) {
     if (error instanceof Error) {

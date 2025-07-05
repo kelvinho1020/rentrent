@@ -38,21 +38,17 @@ export const searchByCommuteTime = async (params: CommuteSearchRequest): Promise
 		});
 
 		if (response.data && response.data.success && response.data.data) {
-			const { listings, cache_stats, meta } = response.data.data;
+			const { listings, from_cache, meta } = response.data.data;
 			
 			console.log("🔍 快取搜尋結果:", {
 				總數: listings.length,
-				快取命中: cache_stats.cached_count,
-				重新計算: cache_stats.calculated_count,
-				快取命中率: cache_stats.cache_hit_rate,
-				處理時間: meta.processingTime,
+				是否來自快取: from_cache,
 			});
 
 			return {
 				total: listings.length,
 				results: listings,
-				cache_stats: cache_stats,
-				note: `快取系統 (${params.transit_mode || "transit"}模式) - 處理時間: ${meta.processingTime}`
+				note: `快取系統 (${params.transit_mode || "transit"}模式) - ${from_cache ? "使用快取" : "重新計算"}`
 			};
 		}
 
@@ -81,12 +77,11 @@ export const searchByCommuteTime = async (params: CommuteSearchRequest): Promise
 export const getIsochrone = async (
 	lat: number,
 	lng: number,
-	minutes: number,
 	maxDistance: number = 10,
 	profile = "driving"
 ): Promise<any> => {
-	const response = await api.get(`/commute/isochrone/${minutes}`, {
-		params: { lat, lng, profile, max_distance: maxDistance },
+	const response = await api.get(`/commute/isochrone`, {
+		params: { lat, lng, transit_mode: profile, max_distance: maxDistance },
 	});
 	return response.data;
 };
