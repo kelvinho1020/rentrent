@@ -2,6 +2,8 @@ import { PrismaClient } from '@prisma/client';
 import { logger } from '../utils/logger';
 import { getDistanceMatrix } from './mapService';
 import { redisClient } from '../config/redis';
+import { SmartCommuteFilters, DistanceMatrixResponse } from '../types';
+import { ListingBasic } from '@rentrent/shared';
 
 const prisma = new PrismaClient();
 
@@ -68,14 +70,6 @@ async function findNearbyListings(centerLat: number, centerLng: number, radiusKm
   return nearbyListings;
 }
 
-interface SmartCommuteFilters {
-  minPrice?: number;
-  maxPrice?: number;
-  minSize?: number;
-  city?: string;
-  district?: string;
-}
-
 export async function smartCommuteSearch(params: {
   destination: { lat: number; lng: number };
   mode: string;
@@ -120,7 +114,7 @@ export async function smartCommuteSearch(params: {
     const commuteData = cachedCommuteData[listing.id];
     
     if (commuteData && commuteData.durationMinutes <= maxCommuteTime) {
-      results.push({
+      const result: ListingBasic = {
         id: listing.id,
         title: listing.title,
         price: listing.price,
@@ -128,10 +122,10 @@ export async function smartCommuteSearch(params: {
         address: listing.address,
         district: listing.district,
         city: listing.city,
-        coordinates: [listing.longitude, listing.latitude] as [number, number],
+        coordinates: [listing.longitude, listing.latitude],
         commute_time: commuteData.durationMinutes,
-        commute_distance: commuteData.distanceKm || undefined,
-      });
+      };
+      results.push(result);
     } else {
       needCalculation.push(listing);
     }
@@ -177,7 +171,7 @@ export async function smartCommuteSearch(params: {
               };
               
               if (durationMinutes <= maxCommuteTime) {
-                results.push({
+                const result: ListingBasic = {
                   id: listing.id,
                   title: listing.title,
                   price: listing.price,
@@ -185,10 +179,10 @@ export async function smartCommuteSearch(params: {
                   address: listing.address,
                   district: listing.district,
                   city: listing.city,
-                  coordinates: [listing.longitude, listing.latitude] as [number, number],
+                  coordinates: [listing.longitude, listing.latitude],
                   commute_time: durationMinutes,
-                  commute_distance: distanceKm || undefined,
-                });
+                };
+                results.push(result);
               }
             } else {
               newCommuteData[listing.id] = {
@@ -222,7 +216,7 @@ export async function smartCommuteSearch(params: {
   }
 
   // 按通勤時間排序並返回
-  results.sort((a, b) => a.commute_time - b.commute_time);
+  results.sort((a, b) => (a.commute_time || 0) - (b.commute_time || 0));
   
   logger.info(`✅ 最終結果: ${results.length} 筆符合條件的房屋`);
   

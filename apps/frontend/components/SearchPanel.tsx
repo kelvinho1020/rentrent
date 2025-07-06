@@ -1,7 +1,7 @@
 import { FC, useState, useEffect } from "react";
 import { useMapStore } from "@/store/useMapStore";
 import { searchByCommuteTime } from "@/utils/api";
-import { ListingBasic } from "@/types";
+import { ListingBasic, TransitMode } from "@/types";
 
 const commuteTimes = [
   { value: 15, label: "15 分鐘" },
@@ -34,7 +34,7 @@ const SearchPanel: FC = () => {
   const [minSize, setMinSize] = useState<number | undefined>(undefined);
   const [city, setCity] = useState<string | undefined>(undefined);
   const [district, setDistrict] = useState<string | undefined>(undefined);
-  const [transitMode, setTransitMode] = useState<string>("driving");
+  const [transitMode, setTransitMode] = useState<TransitMode>("driving");
   const [error, setError] = useState<string | null>(null);
   const [searchResult, setSearchResult] = useState<string | null>(null);
 

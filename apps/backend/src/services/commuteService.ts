@@ -1,27 +1,8 @@
 import { PrismaClient } from '@prisma/client';
 import { logger } from '../utils/logger';
+import { CommuteFilter, ListingWithDistance } from '../types';
 
 const prisma = new PrismaClient();
-
-interface CommuteFilter {
-  minPrice?: number;
-  maxPrice?: number;
-  minSize?: number;
-  city?: string;
-  district?: string;
-}
-
-interface ListingWithDistance {
-  id: number;
-  title: string;
-  price: number;
-  size_ping: number;
-  address: string;
-  district: string;
-  city: string;
-  coordinates: [number, number];
-  distance: number;
-}
 
 /**
  * 根據直線距離搜尋租屋物件

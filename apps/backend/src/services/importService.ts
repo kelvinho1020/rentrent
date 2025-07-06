@@ -1,35 +1,9 @@
 import fs from 'fs';
 import { PrismaClient } from '@prisma/client';
 import { logger } from '../utils/logger';
+import { CrawlerData, ImportResult } from '../types';
 
 const prisma = new PrismaClient();
-
-interface CrawlerData {
-  id?: string;
-  url?: string;
-  title: string;
-  price: string | number;
-  size?: string | number;
-  address?: string;
-  latitude?: number;
-  longitude?: number;
-  houseType?: string;
-  roomLayout?: string;
-  floor_info?: string;
-  parking?: string;
-  images?: string[];
-  facilities?: string[];
-  city?: string;
-  district?: string;
-}
-
-interface ImportResult {
-  imported: number;
-  updated: number;
-  skipped: number;
-  errors: number;
-  totalItems: number;
-}
 
 export async function importListingsFromCrawlerData(filePath: string): Promise<ImportResult> {
   const result: ImportResult = {

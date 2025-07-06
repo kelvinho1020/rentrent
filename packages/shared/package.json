@@ -1,0 +1,17 @@
+{
+  "name": "@rentrent/shared",
+  "version": "1.0.0",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "type-check": "tsc --noEmit"
+  },
+  "peerDependencies": {
+    "typescript": "^5.2.2"
+  },
+  "devDependencies": {
+    "typescript": "^5.2.2"
+  }
+} 

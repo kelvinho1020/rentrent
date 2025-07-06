@@ -10,12 +10,11 @@ RUN npm install -g pnpm@8.6.12
 RUN pnpm install --frozen-lockfile
 
 COPY ./apps/frontend/.env ./apps/frontend/.env
-
 COPY apps/frontend ./apps/frontend/
 
-WORKDIR /app/apps/frontend
+RUN pnpm --filter frontend build
 
-RUN pnpm build
+WORKDIR /app/apps/frontend
 
 EXPOSE 3000
 

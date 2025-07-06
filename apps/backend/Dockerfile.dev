@@ -2,16 +2,25 @@ FROM node:20.10.0-alpine
 
 WORKDIR /app
 
+# 複製 workspace 配置和根目錄依賴
 COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
 COPY apps/backend/package.json ./apps/backend/
 
-RUN npm install -g pnpm@8.6.12 && pnpm install --frozen-lockfile
+# 安裝 pnpm 和所有依賴
+RUN npm install -g pnpm@8.6.12
+RUN pnpm install --frozen-lockfile
 
+# 複製後端代碼
 COPY apps/backend ./apps/backend/
 
+# 切換到後端目錄生成 Prisma 客戶端
 WORKDIR /app/apps/backend
 RUN npx prisma generate
 
+# 回到根目錄使用 pnpm workspace
+WORKDIR /app
+
 EXPOSE 8000
 
-CMD ["pnpm", "run", "dev"]
+# 在根目錄使用 pnpm workspace 運行後端開發服務器
+CMD ["pnpm", "--filter", "backend", "dev"]

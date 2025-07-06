@@ -1,6 +1,7 @@
 import axios from 'axios';
 import { logger } from '../utils/logger';
 import { redisClient } from '../config/redis';
+import { IsochroneParams, DistanceMatrixResponse } from '../types';
 
 const GOOGLE_MAPS_API_KEY = process.env.GOOGLE_MAPS_API_KEY || '';
 const CACHE_EXPIRY = 60 * 60 * 24 * 7; // 一週
@@ -11,29 +12,6 @@ if (!GOOGLE_MAPS_API_KEY) {
 
 function normalizeCoordinate(coordinate: number, precision: number = 2): number {
   return Math.round(coordinate * Math.pow(10, precision)) / Math.pow(10, precision);
-}
-
-interface DistanceMatrixResponse {
-  status: string;
-  rows: {
-    elements: {
-      status: string;
-      duration: {
-        value: number;
-        text: string;
-      };
-      distance?: {
-        value: number;
-        text: string;
-      };
-    }[];
-  }[];
-}
-
-interface IsochroneParams {
-  location: [number, number];
-  mode: string;
-  maxDistance?: number; // 最大距離參數（公里）
 }
 
 export async function getDistanceMatrix(

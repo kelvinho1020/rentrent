@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { StatusCodes } from 'http-status-codes';
 import { PrismaClient } from '@prisma/client';
 import { logger } from '../utils/logger';
+import { ApiErrorResponse, ListingBasic, ListingDetail, SearchResponse } from '@rentrent/shared';
 
 const prisma = new PrismaClient();
 
@@ -37,6 +38,9 @@ export class ListingsController {
       }
       if (min_size) where.sizePing = { gte: Number(min_size) };
 
+      // 查詢總數
+      const total = await prisma.listing.count({ where });
+
       // 執行查詢
       const listings = await prisma.listing.findMany({
         where,
@@ -56,8 +60,8 @@ export class ListingsController {
         },
       });
 
-      // 轉換為前端格式
-      const formattedListings = listings.map((listing) => ({
+      // 轉換為 shared ListingBasic 格式
+      const formattedListings: ListingBasic[] = listings.map((listing) => ({
         id: listing.id,
         title: listing.title,
         price: listing.price,
@@ -68,7 +72,12 @@ export class ListingsController {
         coordinates: [listing.longitude, listing.latitude],
       }));
 
-      res.status(StatusCodes.OK).json(formattedListings);
+      const response: SearchResponse = {
+        total,
+        results: formattedListings,
+      };
+
+      res.status(StatusCodes.OK).json(response);
     } catch (error) {
       logger.error('獲取租屋物件列表失敗', { error });
       res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
@@ -76,7 +85,7 @@ export class ListingsController {
           message: '獲取租屋物件列表失敗',
           status: StatusCodes.INTERNAL_SERVER_ERROR,
         },
-      });
+      } as ApiErrorResponse);
     }
   };
 
@@ -100,32 +109,32 @@ export class ListingsController {
             message: '找不到租屋物件',
             status: StatusCodes.NOT_FOUND,
           },
-        });
+        } as ApiErrorResponse);
         return;
       }
 
-      // 轉換為前端格式
-      const formattedListing = {
+      // 轉換為 shared ListingDetail 格式
+      const formattedListing: ListingDetail = {
         id: listing.id,
         title: listing.title,
         source_id: listing.sourceId,
-        url: listing.url,
+        url: listing.url || undefined,
         price: listing.price,
         size_ping: listing.sizePing,
-        house_type: listing.houseType,
-        room_type: listing.roomType,
+        house_type: listing.houseType || undefined,
+        room_type: listing.roomType || undefined,
         address: listing.address,
         district: listing.district,
         city: listing.city,
-        description: listing.description,
+        description: listing.description || undefined,
         image_urls: listing.imageUrls,
         facilities: listing.facilities,
-        contact_name: listing.contactName,
-        contact_phone: listing.contactPhone,
-        floor: listing.floor,
-        total_floor: listing.totalFloor,
-        last_updated: listing.lastUpdated,
-        created_at: listing.createdAt,
+        contact_name: listing.contactName || undefined,
+        contact_phone: listing.contactPhone || undefined,
+        floor: listing.floor?.toString(),
+        total_floor: listing.totalFloor?.toString(),
+        last_updated: listing.lastUpdated?.toISOString(),
+        created_at: listing.createdAt?.toISOString(),
         coordinates: [listing.longitude, listing.latitude],
       };
 
@@ -137,7 +146,7 @@ export class ListingsController {
           message: '獲取租屋物件詳情失敗',
           status: StatusCodes.INTERNAL_SERVER_ERROR,
         },
-      });
+      } as ApiErrorResponse);
     }
   };
 
@@ -160,7 +169,7 @@ export class ListingsController {
           message: '獲取城市列表失敗',
           status: StatusCodes.INTERNAL_SERVER_ERROR,
         },
-      });
+      } as ApiErrorResponse);
     }
   };
 
@@ -189,7 +198,7 @@ export class ListingsController {
           message: '獲取行政區列表失敗',
           status: StatusCodes.INTERNAL_SERVER_ERROR,
         },
-      });
+      } as ApiErrorResponse);
     }
   };
 } 

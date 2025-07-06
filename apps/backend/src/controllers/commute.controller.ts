@@ -3,6 +3,8 @@ import { StatusCodes } from 'http-status-codes';
 import { logger } from '../utils/logger';
 import { findListingsByDistance } from '../services/commuteService';
 import { getIsochroneData } from '../services/mapService';
+import { ApiErrorResponse } from '@rentrent/shared';
+import { DistanceSearchResponse } from '../types';
 
 export class CommuteController {
   /**
@@ -30,7 +32,7 @@ export class CommuteController {
             message: '缺少必要參數 work_location(或destination)',
             status: StatusCodes.BAD_REQUEST,
           },
-        });
+        } as ApiErrorResponse);
         return;
       }
 
@@ -78,7 +80,7 @@ export class CommuteController {
             message: '解析座標時發生錯誤，請檢查格式',
             status: StatusCodes.BAD_REQUEST,
           },
-        });
+        } as ApiErrorResponse);
         return;
       }
 
@@ -100,7 +102,7 @@ export class CommuteController {
           }
         },
         note: '使用直線距離計算'
-      });
+      } as DistanceSearchResponse);
 
     } catch (error) {
       logger.error('直線距離搜尋失敗', { error });
@@ -110,7 +112,7 @@ export class CommuteController {
           message: '直線距離搜尋失敗',
           status: StatusCodes.INTERNAL_SERVER_ERROR,
         },
-      });
+      } as ApiErrorResponse);
     }
   };
 
@@ -127,7 +129,7 @@ export class CommuteController {
             message: '缺少必要參數 lat 和 lng',
             status: StatusCodes.BAD_REQUEST,
           },
-        });
+        } as ApiErrorResponse);
         return;
       }
 
@@ -140,7 +142,7 @@ export class CommuteController {
             message: 'lat 和 lng 值必須是有效的數字',
             status: StatusCodes.BAD_REQUEST,
           },
-        });
+        } as ApiErrorResponse);
         return;
       }
 
@@ -160,7 +162,7 @@ export class CommuteController {
           message: '獲取等時線資料失敗',
           status: StatusCodes.INTERNAL_SERVER_ERROR,
         },
-      });
+      } as ApiErrorResponse);
     }
   };
 }

@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { logger } from '../utils/logger';
 import { smartCommuteSearch } from '../services/commuteCacheService';
+import { SmartCommuteSearchResponse, BaseApiResponse } from '../types';
 
 /**
  * 通勤搜尋
@@ -71,7 +72,7 @@ export async function searchByCommute(req: Request, res: Response) {
 		const fromCache = Array.isArray(searchResult) ? false : searchResult.from_cache;
 
 		// 按通勤時間排序
-		const sortedResults = listings.sort((a, b) => a.commute_time - b.commute_time);
+		const sortedResults = listings.sort((a, b) => (a.commute_time || 0) - (b.commute_time || 0));
 
 		res.json({
 			success: true,
@@ -89,12 +90,13 @@ export async function searchByCommute(req: Request, res: Response) {
 					}
 				},
 			},
-		});
+		} as SmartCommuteSearchResponse);
 	} catch (error) {
-		logger.error('"通勤搜尋失敗', { error });
+		logger.error('通勤搜尋失敗', { error });
 		res.status(500).json({
+			success: false,
 			error: '搜尋失敗',
 			message: '伺服器內部錯誤，請稍後再試'
-		});
+		} as BaseApiResponse);
 	}
 }
