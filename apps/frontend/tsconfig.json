@@ -18,16 +18,16 @@
     "isolatedModules": true,
     "jsx": "preserve",
     "incremental": true,
-    "paths": {
-      "@/*": ["./src/*"],
-      "@rentrent/shared": ["../../packages/shared/src"],
-      "@rentrent/shared/*": ["../../packages/shared/src/*"]
-    },
     "plugins": [
       {
         "name": "next"
       }
-    ]
+    ],
+    "paths": {
+      "@/*": ["./*"],
+      "@rentrent/shared": ["../../packages/shared/src"],
+      "@rentrent/shared/*": ["../../packages/shared/src/*"]
+    }
   },
   "include": [
     "next-env.d.ts",
