@@ -31,4 +31,8 @@ RUN cd apps/backend && npx prisma generate
 
 EXPOSE 8000
 
-CMD ["sh", "-c", "cd /app/apps/backend && pnpm start"]
+# 使用 shell 腳本來執行初始化和啟動
+COPY apps/backend/start.sh /app/apps/backend/start.sh
+RUN chmod +x /app/apps/backend/start.sh
+
+CMD ["/app/apps/backend/start.sh"]
