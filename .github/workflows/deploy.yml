@@ -38,4 +38,5 @@ jobs:
           # 在這裡不需要執行遷移，因為 start.sh 已經處理了
 
           echo "📥 Importing listings..."
-          docker exec rentrent-backend-prod pnpm ts-node -T --skip-project /app/apps/backend/scripts/import-listings.ts /app/apps/backend/data/crawl_result_current.json 
+          # 使用編譯後的 JavaScript 檔案執行匯入
+          docker exec rentrent-backend-prod node /app/apps/backend/dist/scripts/import-listings.js /app/apps/backend/data/crawl_result_current.json 
