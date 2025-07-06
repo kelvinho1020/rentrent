@@ -1,10 +1,10 @@
-# RentRent 租屋平台
+# RentRent 租屋搜尋平台
 
 以通勤時間為核心的租屋搜尋平台，協助使用者找到最適合的租屋地點。
 
 ## 系統架構
 
-![系統架構圖](docs/images/architecture.png)
+![系統架構圖](docs/images/architecture-dark.png)
 
 ### 主要元件
 
