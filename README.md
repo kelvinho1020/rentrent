@@ -1,5 +1,10 @@
 # RentRent 租屋搜尋平台
 
+[![Website](https://img.shields.io/badge/Website-rentrent.site-blue?style=flat-square)](https://rentrent.site)
+[![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/kelvinho1020/rentrent/deploy.yml?branch=master&style=flat-square)](https://github.com/kelvinho1020/rentrent/actions)
+
+🔗 **[立即體驗 rentrent.site](https://rentrent.site)**
+
 以通勤時間為核心的租屋搜尋平台，協助使用者找到最適合的租屋地點。
 
 ## 系統架構
