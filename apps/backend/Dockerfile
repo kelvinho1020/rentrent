@@ -18,4 +18,6 @@ RUN npx prisma generate
 
 EXPOSE 8000
 
-CMD ["sh", "-c", "npx prisma migrate deploy && pnpm import data/crawl_result_current.json && pnpm start"]
+ENV NODE_OPTIONS="--max-old-space-size=256"
+
+CMD ["sh", "-c", "npx prisma migrate deploy && pnpm start"]
