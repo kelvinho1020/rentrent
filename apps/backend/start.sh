@@ -8,6 +8,10 @@ while ! nc -z db 5432; do
   sleep 1
 done
 
+# 重置資料庫
+echo "Resetting database..."
+npx prisma migrate reset --force
+
 # 執行資料庫遷移
 echo "Running database migrations..."
 npx prisma migrate deploy
