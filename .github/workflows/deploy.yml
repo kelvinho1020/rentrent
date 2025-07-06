@@ -27,7 +27,6 @@ jobs:
           docker compose -f docker-compose.prod.yml up -d --build backend
 
           echo "📦 Running Prisma migration..."
-          docker exec rentrent-backend-prod pnpm prisma migrate deploy
 
           echo "📥 Importing listings..."
           docker exec rentrent-backend-prod pnpm ts-node -T /app/apps/backend/scripts/import-listings.ts /app/apps/backend/data/crawl_result_current.json 

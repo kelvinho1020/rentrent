@@ -18,4 +18,4 @@ RUN npx prisma generate
 
 EXPOSE 8000
 
-CMD ["sh", "-c", "npx prisma migrate deploy && pnpm start"]
+CMD ["sh", "-c", "pnpm start"]
