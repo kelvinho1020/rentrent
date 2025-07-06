@@ -10,8 +10,11 @@ RUN npm install -g pnpm@8.6.12
 RUN pnpm install --frozen-lockfile
 
 COPY ./apps/frontend/.env ./apps/frontend/.env
-
 COPY apps/frontend ./apps/frontend/
+COPY packages/shared ./packages/shared/
+
+# 先構建 shared package
+RUN pnpm --filter @rentrent/shared build
 
 EXPOSE 3000
 
