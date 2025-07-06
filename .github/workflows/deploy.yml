@@ -30,4 +30,4 @@ jobs:
           docker exec rentrent-backend-prod pnpm prisma migrate deploy
 
           echo "📥 Importing listings..."
-          docker exec rentrent-backend-prod pnpm ts-node /app/apps/backend/scripts/import-listings.ts /app/apps/backend/data/crawl_result_current.json 
+          docker exec rentrent-backend-prod pnpm ts-node -T /app/apps/backend/scripts/import-listings.ts /app/apps/backend/data/crawl_result_current.json 
