@@ -29,4 +29,4 @@ jobs:
           echo "📦 Running Prisma migration..."
 
           echo "📥 Importing listings..."
-          docker exec rentrent-backend-prod pnpm ts-node -T --skip-project /app/apps/backend/scripts/import-listings.ts 
+          docker exec rentrent-backend-prod node /app/apps/backend/dist/scripts/import-listings.js 
