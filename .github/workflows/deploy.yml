@@ -21,12 +21,21 @@ jobs:
           cd ~/rentrent
           git pull origin master
 
+          echo "🧹 Cleaning up old containers..."
+          # 停止並移除所有容器
+          docker compose -f docker-compose.prod.yml down --remove-orphans || true
+          # 確保所有容器都被移除
+          docker rm -f rentrent-frontend-prod rentrent-backend-prod || true
+          
           echo "🛠️ Rebuilding containers..."
-          # 強制重新構建前後端
-          docker compose -f docker-compose.prod.yml up -d --build --force-recreate frontend
-          docker compose -f docker-compose.prod.yml up -d --build backend
+          # 重新建置並啟動所有服務
+          docker compose -f docker-compose.prod.yml up -d --build
+
+          echo "⏳ Waiting for services to be ready..."
+          sleep 30  # 等待服務完全啟動
 
           echo "📦 Running Prisma migration..."
+          # 在這裡不需要執行遷移，因為 start.sh 已經處理了
 
           echo "📥 Importing listings..."
           docker exec rentrent-backend-prod pnpm ts-node -T --skip-project /app/apps/backend/scripts/import-listings.ts /app/apps/backend/data/crawl_result_current.json 
