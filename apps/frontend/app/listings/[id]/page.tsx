@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { ListingDetail } from "@/types";
+import { ListingDetail } from "@rentrent/shared";
 import { getListingDetail } from "@/utils/api";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
