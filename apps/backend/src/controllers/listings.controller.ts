@@ -161,7 +161,7 @@ export class ListingsController {
         distinct: ['city'],
       });
 
-      res.status(StatusCodes.OK).json(cities.map((city) => city.city));
+      res.status(StatusCodes.OK).json(cities.map((city: { city: string }) => city.city));
     } catch (error) {
       logger.error('獲取城市列表失敗', { error });
       res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
@@ -190,7 +190,7 @@ export class ListingsController {
         distinct: ['district'],
       });
 
-      res.status(StatusCodes.OK).json(districts.map((district) => district.district));
+      res.status(StatusCodes.OK).json(districts.map((district: { district: string }) => district.district));
     } catch (error) {
       logger.error('獲取行政區列表失敗', { error });
       res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
