@@ -16,10 +16,6 @@ done
 echo "Running database migrations..."
 npx prisma migrate deploy
 
-# 執行資料匯入（如果需要）
-echo "Importing listings..."
-NODE_ENV=production node dist/scripts/import-listings.js
-
 # 啟動應用程式
 echo "Starting application..."
 pnpm start 
